@@ -1,0 +1,7 @@
+ofxCv
+ofxFaceTracker
+ofxGui
+ofxKinectForWindows2
+ofxNetwork
+ofxOpenCv
+ofxXmlSettings
