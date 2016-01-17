@@ -20,6 +20,8 @@ DWORD features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
 | FaceFrameFeatures::FaceFrameFeatures_Glasses
 | FaceFrameFeatures::FaceFrameFeatures_FaceEngagement;
 
+PointF facePoint[FacePointType::FacePointType_Count];
+bool drawface = false;
 
 template<class Interface>
 inline void SafeRelease(Interface *& pInterfaceToRelease)
@@ -158,9 +160,9 @@ void ofApp::update(){
 						std::vector<std::string> result;
 
 						// Face Point
-						PointF facePoint[FacePointType::FacePointType_Count];
 						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, facePoint);
 						if (SUCCEEDED(hResult)) {
+							drawface = true;
 							/*
 							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[0].X), static_cast<int>(facePoint[0].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Eye (Left)
 							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[1].X), static_cast<int>(facePoint[1].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Eye (Right)
@@ -279,6 +281,15 @@ void ofApp::draw(){
 
 	kinect.getBodyIndexSource()->draw(previewWidth, previewHeight, previewWidth, previewHeight);
 	kinect.getBodySource()->drawProjected(previewWidth, previewHeight, previewWidth, previewHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
+
+	if (drawface) {
+		ofDrawCircle(facePoint[0].X, facePoint[0].Y, 5);
+		ofDrawCircle(facePoint[1].X, facePoint[1].Y, 5);
+		ofDrawCircle(facePoint[2].X, facePoint[2].Y, 5);
+		ofDrawCircle(facePoint[3].X, facePoint[3].Y, 5);
+		ofDrawCircle(facePoint[4].X, facePoint[4].Y, 5);
+	}
+
 }
 
 //--------------------------------------------------------------
