@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxKinectForWindows2.h"
-#include "Kinect.Face.h"
+#include "face.h"
 
 class ofApp : public ofBaseApp{
 
@@ -22,12 +22,7 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		void initFace();
 
-		ofxKFW2::Device kinect;
-
-		//bugbug make faceobject at some point
-		IFaceFrameReader* pFaceReader[BODY_COUNT];
-		IFaceFrameSource* pFaceSource[BODY_COUNT];
-		std::string property[FaceProperty::FaceProperty_Count];
+		ofxKinectForWindows2::Device kinect;
+		From2552Software::KinectFace face;
 };
