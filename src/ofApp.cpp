@@ -170,7 +170,7 @@ void ofApp::update(){
 							*/
 						}
 						 
-						// Face Bounding Box ..
+						// Face Bounding Box 
 						RectI boundingBox;
 						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&boundingBox);
 						if (SUCCEEDED(hResult)) {
