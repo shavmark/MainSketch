@@ -138,12 +138,7 @@ namespace From2552Software {
 	}
 
 	void KinectFace::update(IColorFrameReader*colorReader, IBodyFrameReader* bodyReader) {
-
 		HRESULT hResult;
-		IBodyFrame* pBodyFrame = nullptr;
-		hResult = bodyReader->AcquireLatestFrame(&pBodyFrame); //bugbug its likely we do not need to get this here as its already in the kinect2lib
-		if (hResult == E_PENDING)
-			return; // still warming up, can take minutes
 
 		// Color Frame
 		// acquire frame
@@ -172,6 +167,12 @@ namespace From2552Software {
 			}
 		}
 		SafeRelease(pColorFrame);
+
+		
+		IBodyFrame* pBodyFrame = nullptr;
+		hResult = bodyReader->AcquireLatestFrame(&pBodyFrame); //bugbug its likely we do not need to get this here as its already in the kinect2lib
+		if (hResult == E_PENDING)
+			return; // still warming up, can take minutes
 
 		// Body Frame
 		if (pBodyFrame != nullptr) {
