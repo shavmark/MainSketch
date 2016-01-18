@@ -2,6 +2,7 @@
 #include "ofMain.h"
 #include "ofxKinectForWindows2.h"
 #include "Kinect.Face.h"
+#include "Body.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -16,7 +17,7 @@ namespace From2552Software {
 		KinectFace();
 
 		void setup(IKinectSensor *sensor);
-		void update(IColorFrameReader*colorReader, IBodyFrameReader* bodyReader);
+		void update(vector<ofxKinectForWindows2::Data::Body>);
 		void draw();
 
 		bool drawFace() { return drawface; }

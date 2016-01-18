@@ -22,7 +22,7 @@ void ofApp::setup(){
 void ofApp::update(){
 	kinect.update();
 
-	face.update(kinect.getColorSource()->getReader(), kinect.getBodySource()->getReader());
+	face.update(kinect.getBodySource()->getBodies());
 
 	//--
 	//Getting joint positions (skeleton tracking)

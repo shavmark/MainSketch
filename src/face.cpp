@@ -70,6 +70,7 @@ namespace From2552Software {
 					ofDrawCircle(leftEye(count).X, leftEye(count).Y, 5);
 					ofDrawCircle(rightEye(count).X, rightEye(count).Y, 5);
 					ofDrawCircle(nose(count).X, nose(count).Y, 5);
+					return;
 					//ofDrawCircle(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 5);
 					//ofDrawCircle(mouthCornerRight(count).X, mouthCornerRight(count).Y, 5);
 					float width = abs(mouthCornerRight(count).X - mouthCornerLeft(count).X);
@@ -83,7 +84,7 @@ namespace From2552Software {
 						height = 5.0;
 					}
 					
-					ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, width, height);
+					//ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, width, height);
 					//ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 
 						//mouthCornerRight(count).X - mouthCornerLeft(count).X, mouthCornerLeft(count).Y - mouthCornerRight(count).Y);
 					//cv::rectangle(bufferMat, cv::Rect(boundingBox.Left, boundingBox.Top, boundingBox.Right - boundingBox.Left, boundingBox.Bottom - boundingBox.Top), static_cast<cv::Scalar>(color[count]));
@@ -137,93 +138,28 @@ namespace From2552Software {
 		*pRoll = static_cast<int>(std::atan2(2 * (x * y + w * z), w * w + x * x - y * y - z * z) / M_PI * 180.0f);
 	}
 
-	void KinectFace::update(IColorFrameReader*colorReader, IBodyFrameReader* bodyReader) {
-		HRESULT hResult;
+	// add faces to the bodies
+	void KinectFace::update(vector<ofxKinectForWindows2::Data::Body> bodies) {
 
-		// Color Frame
-		// acquire frame
-		IColorFrame * pColorFrame = NULL;
-		if (SUCCEEDED(colorReader->AcquireLatestFrame(&pColorFrame))) {
-			// Description
-			IFrameDescription* pDescription;
-			hResult = pColorFrame->get_FrameDescription(&pDescription);
-			if (SUCCEEDED(hResult)) {
-				int width = 0;
-				int height = 0;
-				pDescription->get_Width(&width);
-				pDescription->get_Height(&height); 
-				SafeRelease(pDescription);
-				if (width != pixels.getWidth()) {
-					pixels.allocate(width, height, OF_PIXELS_BGRA);
-					//bugbug figure out texture this->texture.allocate(this->pixels);
-				}
-				hResult = pColorFrame->CopyConvertedFrameDataToArray(pixels.size(), reinterpret_cast<BYTE*>(pixels.getData()), ColorImageFormat::ColorImageFormat_Bgra);
-				if (!SUCCEEDED(hResult)) {
-					std::cerr << "Couldn't pull pixel buffer" << std::endl;
-				}
-			}
-			else {
-				std::cerr << "Error : IColorFrameSource::get_FrameDescription()" << std::endl;
-			}
-		}
-		SafeRelease(pColorFrame);
-
-		
-		IBodyFrame* pBodyFrame = nullptr;
-		hResult = bodyReader->AcquireLatestFrame(&pBodyFrame); //bugbug its likely we do not need to get this here as its already in the kinect2lib
-		if (hResult == E_PENDING)
-			return; // still warming up, can take minutes
-
-		// Body Frame
-		if (pBodyFrame != nullptr) {
-			IBody* pBody[BODY_COUNT] = { 0 };
-			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-			if (SUCCEEDED(hResult)) {
-				for (int count = 0; count < BODY_COUNT; count++) {
-					BOOLEAN bTracked = false;
-					hResult = pBody[count]->get_IsTracked(&bTracked);
-					if (SUCCEEDED(hResult) && bTracked) {
-						/*// Joint
-						Joint joint[JointType::JointType_Count];
-						hResult = pBody[count]->GetJoints( JointType::JointType_Count, joint );
-						if( SUCCEEDED( hResult ) ){
-						for( int type = 0; type < JointType::JointType_Count; type++ ){
-						ColorSpacePoint colorSpacePoint = { 0 };
-						pCoordinateMapper->MapCameraPointToColorSpace( joint[type].Position, &colorSpacePoint );
-						int x = static_cast<int>( colorSpacePoint.X );
-						int y = static_cast<int>( colorSpacePoint.Y );
-						if( ( x >= 0 ) && ( x < width ) && ( y >= 0 ) && ( y < height ) ){
-						cv::circle( bufferMat, cv::Point( x, y ), 5, static_cast<cv::Scalar>( color[count] ), -1, CV_AA );
-						}
-						}
-						}*/
-
-						// Set TrackingID to Detect Face
-						UINT64 trackingId = _UI64_MAX;
-						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (SUCCEEDED(hResult)) {
-							pFaceSource[count]->put_TrackingId(trackingId);
-						}
-					}
-				}
-			}
-			for (int count = 0; count < BODY_COUNT; count++) {
-				SafeRelease(pBody[count]);
-			}
-		}
-		SafeRelease(pBodyFrame);
+		//body.trackingId
+			
 
 		// Face Frame
-		//std::system("cls");
 		for (int count = 0; count < BODY_COUNT; count++) {
+			
+			if (!bodies[count].tracked)
+				continue; // no one there
+
+			pFaceSource[count]->put_TrackingId(bodies[count].trackingId);
 			IFaceFrame* pFaceFrame = nullptr;
-			hResult = pFaceReader[count]->AcquireLatestFrame(&pFaceFrame);
+			HRESULT hResult = pFaceReader[count]->AcquireLatestFrame(&pFaceFrame);
 			drawface[count] = false;
 
 			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
 				BOOLEAN bFaceTracked = false;
+				UINT64 u64 = _UI64_MAX;
 				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-				
+
 				if (SUCCEEDED(hResult) && bFaceTracked) {
 					IFaceFrameResult* pFaceResult = nullptr;
 					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
