@@ -20,18 +20,28 @@ namespace From2552Software {
 		void draw();
 
 		bool drawFace() { return drawface; }
+
+		PointF leftEye(int index) {return facePoint[index][FacePointType_EyeLeft];};
+		PointF rightEye(int index) { return facePoint[index][FacePointType_EyeRight]; };
+		PointF nose(int index) { return facePoint[index][FacePointType_Nose]; };
+		PointF mouthCornerLeft(int index) { return facePoint[index][FacePointType_MouthCornerLeft]; };
+		PointF mouthCornerRight(int index) { return facePoint[index][FacePointType_MouthCornerRight]; };
+
 		ofPixels pixels;
 
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
 
-		bool drawface;
+		bool drawface[BODY_COUNT];
 
-		PointF facePoint[FacePointType::FacePointType_Count];
+		PointF facePoint[BODY_COUNT][FacePointType::FacePointType_Count];
 		
 		IFaceFrameReader* pFaceReader[BODY_COUNT];
 		IFaceFrameSource* pFaceSource[BODY_COUNT];
 		std::string property[FaceProperty::FaceProperty_Count];
+
+		// Color Table
+		ofColor color[BODY_COUNT];
 
 		DWORD features;
 

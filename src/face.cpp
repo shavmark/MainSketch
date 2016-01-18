@@ -3,7 +3,11 @@
 namespace From2552Software {
 
 	KinectFace::KinectFace() {
-		drawface = false;
+		
+		for (int count = 0; count < BODY_COUNT; count++) {
+			drawface[count] = false;
+		}
+
 		features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
 			| FaceFrameFeatures::FaceFrameFeatures_PointsInColorSpace
 			| FaceFrameFeatures::FaceFrameFeatures_RotationOrientation
@@ -25,6 +29,15 @@ namespace From2552Software {
 		property[5] = "MouthOpen";
 		property[6] = "MouthMoved";
 		property[7] = "LookingAway";
+
+		// Color Table
+		color[0] = ofColor(255, 0, 0);
+		color[1] = ofColor(0, 255, 0);
+		color[2] = ofColor(0, 0, 255);
+		color[3] = ofColor(255, 255, 0);
+		color[4] = ofColor(255, 0, 255);
+		color[5] = ofColor(0, 255, 255);
+
 	};
 
 
@@ -51,11 +64,18 @@ namespace From2552Software {
 	void KinectFace::draw()
 	{
 		if (drawface) {
-			ofDrawCircle(facePoint[0].X, facePoint[0].Y, 5);
-			ofDrawCircle(facePoint[1].X, facePoint[1].Y, 5);
-			ofDrawCircle(facePoint[2].X, facePoint[2].Y, 5);
-			ofDrawCircle(facePoint[3].X, facePoint[3].Y, 5);
-			ofDrawCircle(facePoint[4].X, facePoint[4].Y, 5);
+			for (int count = 0; count < BODY_COUNT; count++) {
+				if (drawface[count]) {
+					ofSetColor(color[count]);
+					ofDrawCircle(leftEye(count).X, leftEye(count).Y, 5);
+					ofDrawCircle(rightEye(count).X, rightEye(count).Y, 5);
+					ofDrawCircle(nose(count).X, nose(count).Y, 5);
+					ofDrawCircle(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 5);
+					ofDrawCircle(mouthCornerRight(count).X, mouthCornerRight(count).Y, 5);
+				    ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, mouthCornerRight(count).X- mouthCornerLeft(count).X, mouthCornerLeft(count).Y-mouthCornerRight(count).Y);
+				}
+			}
+
 		}
 	}
 	void KinectFace::ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll)
@@ -159,6 +179,8 @@ namespace From2552Software {
 		for (int count = 0; count < BODY_COUNT; count++) {
 			IFaceFrame* pFaceFrame = nullptr;
 			hResult = pFaceReader[count]->AcquireLatestFrame(&pFaceFrame);
+			drawface[count] = false;
+
 			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
 				BOOLEAN bFaceTracked = false;
 				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
@@ -170,16 +192,9 @@ namespace From2552Software {
 						std::vector<std::string> result;
 
 						// Face Point
-						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, facePoint);
+						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, facePoint[count]);
 						if (SUCCEEDED(hResult)) {
-							drawface = true;
-							/*
-							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[0].X), static_cast<int>(facePoint[0].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Eye (Left)
-							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[1].X), static_cast<int>(facePoint[1].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Eye (Right)
-							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[2].X), static_cast<int>(facePoint[2].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Nose
-							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[3].X), static_cast<int>(facePoint[3].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Mouth (Left)
-							cv::circle(bufferMat, cv::Point(static_cast<int>(facePoint[4].X), static_cast<int>(facePoint[4].Y)), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA); // Mouth (Right)
-							*/
+							drawface[count] = true;
 						}
 
 						// Face Bounding Box test

@@ -66,6 +66,7 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+	/*
 	kinect.getDepthSource()->draw(0, 0, previewWidth, previewHeight);  // note that the depth texture is RAW so may appear dark
 
 																	   // Color is at 1920x1080 instead of 512x424 so we should fix aspect ratio
@@ -79,7 +80,7 @@ void ofApp::draw(){
 
 	kinect.getBodyIndexSource()->draw(previewWidth, previewHeight, previewWidth, previewHeight);
 	kinect.getBodySource()->drawProjected(previewWidth, previewHeight, previewWidth, previewHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
-
+	*/
 	face.draw();
 	
 
