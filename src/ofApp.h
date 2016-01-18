@@ -24,5 +24,5 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 
 		ofxKinectForWindows2::Device kinect;
-		From2552Software::KinectFace face;
+		From2552Software::KinectFaces faces;
 };

@@ -13,7 +13,7 @@ void ofApp::setup(){
 	kinect.initInfraredSource();
 	kinect.initBodySource();
 	kinect.initBodyIndexSource();
-	face.setup(kinect.getSensor());
+	faces.setup(kinect.getSensor());
 
 	ofSetWindowShape(previewWidth * 2, previewHeight * 2);
 }
@@ -22,7 +22,7 @@ void ofApp::setup(){
 void ofApp::update(){
 	kinect.update();
 
-	face.update(kinect.getBodySource()->getBodies());
+	faces.update(kinect.getBodySource()->getBodies());
 
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -70,8 +70,6 @@ void ofApp::draw(){
 	kinect.getDepthSource()->draw(0, 0, previewWidth, previewHeight);  // note that the depth texture is RAW so may appear dark
 
 																	   // Color is at 1920x1080 instead of 512x424 so we should fix aspect ratio
-	float colorHeight = previewWidth * (kinect.getColorSource()->getHeight() / kinect.getColorSource()->getWidth());
-	float colorTop = (previewHeight - colorHeight) / 2.0;
 
 	kinect.getColorSource()->draw(previewWidth, 0 + colorTop, previewWidth, colorHeight);
 	kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight);
@@ -81,7 +79,8 @@ void ofApp::draw(){
 	kinect.getBodyIndexSource()->draw(previewWidth, previewHeight, previewWidth, previewHeight);
 	kinect.getBodySource()->drawProjected(previewWidth, previewHeight, previewWidth, previewHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	*/
-	face.draw();
+
+	faces.draw(kinect.getBodySource()->getBodies());
 	
 
 }

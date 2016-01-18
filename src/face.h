@@ -14,37 +14,47 @@ namespace From2552Software {
 
 	class KinectFace {
 	public:
-		KinectFace();
+		KinectFace(int bodyID = -1) { 
+			faceId = bodyID; // uses the same id but would not have to
+			bodyId = bodyID;
+			valid = false; 
+		}
+
+		PointF leftEye() { return facePoint[FacePointType_EyeLeft]; };
+		PointF rightEye() { return facePoint[FacePointType_EyeRight]; };
+		PointF nose() { return facePoint[FacePointType_Nose]; };
+		PointF mouthCornerLeft() { return facePoint[FacePointType_MouthCornerLeft]; };
+		PointF mouthCornerRight() { return facePoint[FacePointType_MouthCornerRight]; };
+
+		friend class KinectFaces;
+		bool valid; // true when data is valid
+
+	protected:
+		PointF facePoint[FacePointType::FacePointType_Count];
+		DetectionResult faceProperty[FaceProperty::FaceProperty_Count];
+		RectI boundingBox;
+		Vector4 faceRotation;
+		IFaceFrameReader* pFaceReader;
+		IFaceFrameSource* pFaceSource;
+		int faceId;
+		int bodyId; // map face to body
+	};
+
+	class KinectFaces {
+	public:
+		KinectFaces();
 
 		void setup(IKinectSensor *sensor);
 		void update(vector<ofxKinectForWindows2::Data::Body>);
-		void draw();
-
-		bool drawFace() { return drawface; }
-
-		PointF leftEye(int index) {return facePoint[index][FacePointType_EyeLeft];};
-		PointF rightEye(int index) { return facePoint[index][FacePointType_EyeRight]; };
-		PointF nose(int index) { return facePoint[index][FacePointType_Nose]; };
-		PointF mouthCornerLeft(int index) { return facePoint[index][FacePointType_MouthCornerLeft]; };
-		PointF mouthCornerRight(int index) { return facePoint[index][FacePointType_MouthCornerRight]; };
-
-		ofPixels pixels;
+		void draw(vector<ofxKinectForWindows2::Data::Body> bodies);
 
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
 
-		bool drawface[BODY_COUNT];
-
-		PointF facePoint[BODY_COUNT][FacePointType::FacePointType_Count];
-		DetectionResult faceProperty[BODY_COUNT][FaceProperty::FaceProperty_Count];
-		RectI boundingBox[BODY_COUNT];
-		Vector4 faceRotation[BODY_COUNT];
-		IFaceFrameReader* pFaceReader[BODY_COUNT];
-		IFaceFrameSource* pFaceSource[BODY_COUNT];
 		std::string property[FaceProperty::FaceProperty_Count];
 
 		// Color Table
-		ofColor color[BODY_COUNT];
+		vector<ofColor> colors;
 
 		DWORD features;
 
@@ -55,6 +65,8 @@ namespace From2552Software {
 				pInterfaceToRelease = NULL;
 			}
 		}
+		vector<KinectFace> faces;
+
 	};
 
 }
