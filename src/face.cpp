@@ -70,9 +70,55 @@ namespace From2552Software {
 					ofDrawCircle(leftEye(count).X, leftEye(count).Y, 5);
 					ofDrawCircle(rightEye(count).X, rightEye(count).Y, 5);
 					ofDrawCircle(nose(count).X, nose(count).Y, 5);
-					ofDrawCircle(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 5);
-					ofDrawCircle(mouthCornerRight(count).X, mouthCornerRight(count).Y, 5);
-				    ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, mouthCornerRight(count).X- mouthCornerLeft(count).X, mouthCornerLeft(count).Y-mouthCornerRight(count).Y);
+					//ofDrawCircle(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 5);
+					//ofDrawCircle(mouthCornerRight(count).X, mouthCornerRight(count).Y, 5);
+					float width = abs(mouthCornerRight(count).X - mouthCornerLeft(count).X);
+					float height;
+					if (faceProperty[count][FaceProperty_MouthOpen] == DetectionResult_Yes || faceProperty[count][FaceProperty_MouthOpen] == DetectionResult_Maybe)
+					{
+						height = 20.0;
+					}
+					else
+					{
+						height = 5.0;
+					}
+					
+					ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, width, height);
+					//ofDrawEllipse(mouthCornerLeft(count).X, mouthCornerLeft(count).Y, 
+						//mouthCornerRight(count).X - mouthCornerLeft(count).X, mouthCornerLeft(count).Y - mouthCornerRight(count).Y);
+					//cv::rectangle(bufferMat, cv::Rect(boundingBox.Left, boundingBox.Top, boundingBox.Right - boundingBox.Left, boundingBox.Bottom - boundingBox.Top), static_cast<cv::Scalar>(color[count]));
+					//if (SUCCEEDED(hResult)) {
+					//	int pitch, yaw, roll;
+					//	ExtractFaceRotationInDegrees(&faceRotation, &pitch, &yaw, &roll);
+					//	result.push_back("Pitch, Yaw, Roll : " + std::to_string(pitch) + ", " + std::to_string(yaw) + ", " + std::to_string(roll));
+					//}
+					/*
+					if (SUCCEEDED(hResult)) {
+						for (int count = 0; count < FaceProperty::FaceProperty_Count; count++) {
+							switch (faceProperty[count]) {
+							case DetectionResult::DetectionResult_Unknown:
+								result.push_back(property[count] + " : Unknown");
+								break;
+							case DetectionResult::DetectionResult_Yes:
+								result.push_back(property[count] + " : Yes");
+								break;
+							case DetectionResult::DetectionResult_No:
+								result.push_back(property[count] + " : No");
+								break;
+							case DetectionResult::DetectionResult_Maybe:
+								result.push_back(property[count] + " : Mayby");
+								break;
+							default:
+								break;
+							}
+						}
+						if (boundingBox.Left && boundingBox.Bottom) {
+						int offset = 30;
+						for (std::vector<std::string>::iterator it = result.begin(); it != result.end(); it++, offset += 30) {
+						//cv::putText(bufferMat, *it, cv::Point(boundingBox.Left, boundingBox.Bottom + offset), cv::FONT_HERSHEY_COMPLEX, 1.0f, static_cast<cv::Scalar>(color[count]), 2, CV_AA);
+						}
+						}
+						*/
 				}
 			}
 
@@ -92,9 +138,13 @@ namespace From2552Software {
 	}
 
 	void KinectFace::update(IColorFrameReader*colorReader, IBodyFrameReader* bodyReader) {
-		HRESULT hResult;
 
-		//while (1) {
+		HRESULT hResult;
+		IBodyFrame* pBodyFrame = nullptr;
+		hResult = bodyReader->AcquireLatestFrame(&pBodyFrame); //bugbug its likely we do not need to get this here as its already in the kinect2lib
+		if (hResult == E_PENDING)
+			return; // still warming up, can take minutes
+
 		// Color Frame
 		// acquire frame
 		IColorFrame * pColorFrame = NULL;
@@ -109,8 +159,7 @@ namespace From2552Software {
 				pDescription->get_Height(&height); 
 				SafeRelease(pDescription);
 				if (width != pixels.getWidth()) {
-					//if (width != this->pixels.getWidth() || height != this->texture.getHeight()) {
-						pixels.allocate(width, height, OF_PIXELS_BGRA);
+					pixels.allocate(width, height, OF_PIXELS_BGRA);
 					//bugbug figure out texture this->texture.allocate(this->pixels);
 				}
 				hResult = pColorFrame->CopyConvertedFrameDataToArray(pixels.size(), reinterpret_cast<BYTE*>(pixels.getData()), ColorImageFormat::ColorImageFormat_Bgra);
@@ -125,53 +174,42 @@ namespace From2552Software {
 		SafeRelease(pColorFrame);
 
 		// Body Frame
-		//cv::Point point[BODY_COUNT];
-		IBodyFrame* pBodyFrame = nullptr;
-		while (1)
-		{
-			hResult = bodyReader->AcquireLatestFrame(&pBodyFrame);
-			if (hResult != E_PENDING)
-				break;
-			Sleep(0);
-		}
+		if (pBodyFrame != nullptr) {
+			IBody* pBody[BODY_COUNT] = { 0 };
+			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
 			if (SUCCEEDED(hResult)) {
-				IBody* pBody[BODY_COUNT] = { 0 };
-				hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-				if (SUCCEEDED(hResult)) {
-					for (int count = 0; count < BODY_COUNT; count++) {
-						BOOLEAN bTracked = false;
-						hResult = pBody[count]->get_IsTracked(&bTracked);
-						if (SUCCEEDED(hResult) && bTracked) {
-							/*// Joint
-							Joint joint[JointType::JointType_Count];
-							hResult = pBody[count]->GetJoints( JointType::JointType_Count, joint );
-							if( SUCCEEDED( hResult ) ){
-							for( int type = 0; type < JointType::JointType_Count; type++ ){
-							ColorSpacePoint colorSpacePoint = { 0 };
-							pCoordinateMapper->MapCameraPointToColorSpace( joint[type].Position, &colorSpacePoint );
-							int x = static_cast<int>( colorSpacePoint.X );
-							int y = static_cast<int>( colorSpacePoint.Y );
-							if( ( x >= 0 ) && ( x < width ) && ( y >= 0 ) && ( y < height ) ){
-							cv::circle( bufferMat, cv::Point( x, y ), 5, static_cast<cv::Scalar>( color[count] ), -1, CV_AA );
-							}
-							}
-							}*/
+				for (int count = 0; count < BODY_COUNT; count++) {
+					BOOLEAN bTracked = false;
+					hResult = pBody[count]->get_IsTracked(&bTracked);
+					if (SUCCEEDED(hResult) && bTracked) {
+						/*// Joint
+						Joint joint[JointType::JointType_Count];
+						hResult = pBody[count]->GetJoints( JointType::JointType_Count, joint );
+						if( SUCCEEDED( hResult ) ){
+						for( int type = 0; type < JointType::JointType_Count; type++ ){
+						ColorSpacePoint colorSpacePoint = { 0 };
+						pCoordinateMapper->MapCameraPointToColorSpace( joint[type].Position, &colorSpacePoint );
+						int x = static_cast<int>( colorSpacePoint.X );
+						int y = static_cast<int>( colorSpacePoint.Y );
+						if( ( x >= 0 ) && ( x < width ) && ( y >= 0 ) && ( y < height ) ){
+						cv::circle( bufferMat, cv::Point( x, y ), 5, static_cast<cv::Scalar>( color[count] ), -1, CV_AA );
+						}
+						}
+						}*/
 
-							// Set TrackingID to Detect Face
-							UINT64 trackingId = _UI64_MAX;
-							hResult = pBody[count]->get_TrackingId(&trackingId);
-							if (SUCCEEDED(hResult)) {
-								pFaceSource[count]->put_TrackingId(trackingId);
-							}
+						// Set TrackingID to Detect Face
+						UINT64 trackingId = _UI64_MAX;
+						hResult = pBody[count]->get_TrackingId(&trackingId);
+						if (SUCCEEDED(hResult)) {
+							pFaceSource[count]->put_TrackingId(trackingId);
 						}
 					}
 				}
-				for (int count = 0; count < BODY_COUNT; count++) {
-					SafeRelease(pBody[count]);
-				}
-				//break;
 			}
-		//}
+			for (int count = 0; count < BODY_COUNT; count++) {
+				SafeRelease(pBody[count]);
+			}
+		}
 		SafeRelease(pBodyFrame);
 
 		// Face Frame
@@ -191,58 +229,17 @@ namespace From2552Software {
 					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
 						std::vector<std::string> result;
 
-						// Face Point
+						// Face Point bugbug all these need some sort of error handling and safe state so data is not accessed on an error
 						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, facePoint[count]);
 						if (SUCCEEDED(hResult)) {
 							drawface[count] = true;
 						}
 
-						// Face Bounding Box test
-						RectI boundingBox;
-						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&boundingBox);
-						if (SUCCEEDED(hResult)) {
-							//cv::rectangle(bufferMat, cv::Rect(boundingBox.Left, boundingBox.Top, boundingBox.Right - boundingBox.Left, boundingBox.Bottom - boundingBox.Top), static_cast<cv::Scalar>(color[count]));
-						}
+						// bugbug add error handling
+						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&boundingBox[count]);
+						hResult = pFaceResult->get_FaceRotationQuaternion(&faceRotation[count]);
+						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faceProperty[count]);
 
-						// Face Rotation
-						Vector4 faceRotation;
-						hResult = pFaceResult->get_FaceRotationQuaternion(&faceRotation);
-						if (SUCCEEDED(hResult)) {
-							int pitch, yaw, roll;
-							ExtractFaceRotationInDegrees(&faceRotation, &pitch, &yaw, &roll);
-							result.push_back("Pitch, Yaw, Roll : " + std::to_string(pitch) + ", " + std::to_string(yaw) + ", " + std::to_string(roll));
-						}
-
-						// Face Property
-						DetectionResult faceProperty[FaceProperty::FaceProperty_Count];
-						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faceProperty);
-						if (SUCCEEDED(hResult)) {
-							for (int count = 0; count < FaceProperty::FaceProperty_Count; count++) {
-								switch (faceProperty[count]) {
-								case DetectionResult::DetectionResult_Unknown:
-									result.push_back(property[count] + " : Unknown");
-									break;
-								case DetectionResult::DetectionResult_Yes:
-									result.push_back(property[count] + " : Yes");
-									break;
-								case DetectionResult::DetectionResult_No:
-									result.push_back(property[count] + " : No");
-									break;
-								case DetectionResult::DetectionResult_Maybe:
-									result.push_back(property[count] + " : Mayby");
-									break;
-								default:
-									break;
-								}
-							}
-						}
-
-						if (boundingBox.Left && boundingBox.Bottom) {
-							int offset = 30;
-							for (std::vector<std::string>::iterator it = result.begin(); it != result.end(); it++, offset += 30) {
-								//cv::putText(bufferMat, *it, cv::Point(boundingBox.Left, boundingBox.Bottom + offset), cv::FONT_HERSHEY_COMPLEX, 1.0f, static_cast<cv::Scalar>(color[count]), 2, CV_AA);
-							}
-						}
 					}
 					SafeRelease(pFaceResult);
 				}

@@ -35,7 +35,9 @@ namespace From2552Software {
 		bool drawface[BODY_COUNT];
 
 		PointF facePoint[BODY_COUNT][FacePointType::FacePointType_Count];
-		
+		DetectionResult faceProperty[BODY_COUNT][FaceProperty::FaceProperty_Count];
+		RectI boundingBox[BODY_COUNT];
+		Vector4 faceRotation[BODY_COUNT];
 		IFaceFrameReader* pFaceReader[BODY_COUNT];
 		IFaceFrameSource* pFaceSource[BODY_COUNT];
 		std::string property[FaceProperty::FaceProperty_Count];
