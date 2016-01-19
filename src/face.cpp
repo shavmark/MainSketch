@@ -278,7 +278,7 @@ namespace From2552Software {
 #endif
 	}
 
-	void KinectFaces::drawProjected(int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj) {
+	void KinectFaces::drawProjected(int x, int y, int width, int height) {
 		return;
 		/*
 		ofPushStyle();

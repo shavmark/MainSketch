@@ -1,6 +1,5 @@
 #pragma once
 #include "ofMain.h"
-#include "ofxKinectForWindows2.h"
 #include "Kinect.Face.h"
 #include "Body.h"
 #include "kinect.h"
@@ -48,7 +47,7 @@ namespace From2552Software {
 		void setup(Kinect *);
 		void update();
 		void draw();
-		void drawProjected(int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj);
+		void drawProjected(int x, int y, int width, int height);
 
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
