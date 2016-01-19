@@ -46,6 +46,7 @@
     <ClCompile Include="src\face.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

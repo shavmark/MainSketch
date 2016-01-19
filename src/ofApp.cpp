@@ -20,9 +20,9 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	kinect.update();
+	//kinect.update();
 
-	faces.update(kinect.getBodySource()->getBodies());
+	faces.update(kinect.getBodySource()->getBodies(), kinect.getBodySource()->getReader());
 
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -79,7 +79,10 @@ void ofApp::draw(){
 	kinect.getBodyIndexSource()->draw(previewWidth, previewHeight, previewWidth, previewHeight);
 	kinect.getBodySource()->drawProjected(previewWidth, previewHeight, previewWidth, previewHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	*/
-
+	//float colorHeight = previewWidth * (kinect.getColorSource()->getHeight() / kinect.getColorSource()->getWidth());
+	//float colorTop = (previewHeight - colorHeight) / 2.0;
+	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
+	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	faces.draw(kinect.getBodySource()->getBodies());
 	
 
