@@ -45,8 +45,8 @@ namespace From2552Software {
 	public:
 		KinectFaces();
 
-		void setup(IKinectSensor *sensor);
-		void update(IBodyFrameReader*);
+		void setup(Kinect *);
+		void update();
 		void draw();
 		void drawProjected(int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj);
 
@@ -59,6 +59,7 @@ namespace From2552Software {
 
 		vector<KinectFace> faces;
 
+		Kinect *pKinect;
 	};
 
 }

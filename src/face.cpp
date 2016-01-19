@@ -3,7 +3,7 @@
 namespace From2552Software {
 
 	KinectFaces::KinectFaces() {
-		
+
 		// features are the same for all faces
 		features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
 			| FaceFrameFeatures::FaceFrameFeatures_PointsInColorSpace
@@ -31,13 +31,15 @@ namespace From2552Software {
 
 
 	// get the face readers
-	void KinectFaces::setup(IKinectSensor *sensor) {
+	void KinectFaces::setup(Kinect *kinectInput) {
 		
+		pKinect = kinectInput;
+
 		// we need a unique ID for bodies at this point, we are assuming that its an index but this could change, should be done in ofKinectLib maybe, not sure
 		for (int i = 0; i < BODY_COUNT; ++i) {
 			KinectFace face(i);
 
-			HRESULT hResult = CreateFaceFrameSource(sensor, face.faceId, features, &face.pFaceSource);
+			HRESULT hResult = CreateFaceFrameSource(pKinect->pSensor, face.faceId, features, &face.pFaceSource);
 			if (FAILED(hResult)) {
 				std::cerr << "Error : CreateFaceFrameSource" << std::endl;
 				return; //bugbug add error handling
@@ -61,23 +63,25 @@ namespace From2552Software {
 		
 		for (auto face : faces) {
 			if (face.valid) {
-				ofDrawCircle(400, 100, 30);
 				// testing ofDrawCircle(400, 100, 30);
 				if (face.faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 				{
 					ofDrawCircle(face.leftEye().X, face.leftEye().Y, 5);
 				}
-				ofDrawCircle(face.rightEye().X, face.rightEye().Y, 5);
+				if (face.faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
+				{
+					ofDrawCircle(face.rightEye().X, face.rightEye().Y, 5);
+				}
 				ofDrawCircle(face.nose().X, face.nose().Y, 5);
 				float width = abs(face.mouthCornerRight().X - face.mouthCornerLeft().X);
 				float height;
-				if (face.faceProperty[FaceProperty_MouthOpen] != DetectionResult_No)
+				if (face.faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
 				{
-					height = 20.0;
+					height = 50.0;
 				}
 				else
 				{
-					height = 5.0;
+					height = 1.0;
 				}
 
 				ofDrawEllipse(face.mouthCornerLeft().X, face.mouthCornerLeft().Y, width, height);
@@ -161,12 +165,12 @@ namespace From2552Software {
 	}
 
 	// add faces to the bodies
-	void KinectFaces::update(IBodyFrameReader*pBodyReader) {
+	void KinectFaces::update() {
 
 		// Body Frame
 		
 		IBodyFrame* pBodyFrame = nullptr;
-		HRESULT hResult = pBodyReader->AcquireLatestFrame(&pBodyFrame);
+		HRESULT hResult = pKinect->pBodyReader->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
 			IBody* pBody[BODY_COUNT] = { 0 };
 			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);

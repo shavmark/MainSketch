@@ -7,15 +7,16 @@ int previewHeight = 480;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	kinect.open();
-	kinect.initDepthSource();
-	kinect.initColorSource();
-	kinect.initInfraredSource();
-	kinect.initBodySource();
-	kinect.initBodyIndexSource();
+	//kinect.open();
+	//kinect.initDepthSource();
+	//kinect.initColorSource();
+	//kinect.initInfraredSource();
+	//kinect.initBodySource();
+	//kinect.initBodyIndexSource();
 
 	myKinect.open();
-	faces.setup(kinect.getSensor());
+	faces.setup(&myKinect);
+	//faces.setup(kinect.getSensor());
 
 	ofSetWindowShape(previewWidth * 2, previewHeight * 2);
 }
@@ -24,8 +25,8 @@ void ofApp::setup(){
 void ofApp::update(){
 	//kinect.update();
 
-	faces.update(kinect.getBodySource()->getReader());
-
+	faces.update();
+	return;
 	//--
 	//Getting joint positions (skeleton tracking)
 	//--

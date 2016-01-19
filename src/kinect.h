@@ -10,8 +10,13 @@ namespace From2552Software {
 			pSensor = nullptr;
 		}
 		void open();
+		IKinectSensor* getSensor() {
+			return pSensor;
+		}
+
 		friend class KinectFaces;
 		friend class KinectFace;
+
 	private:
 		IKinectSensor* pSensor;
 		IColorFrameSource* pColorSource;
