@@ -155,36 +155,45 @@ namespace From2552Software {
 		// keep bodies and faces in sync w/o changing the shared bodies lib
 		for (auto body : bodies) {
 			if (body.tracked) {
+				// see if the body maps to a face
 				for (std::vector<KinectFace>::iterator face = faces.begin(); face != faces.end(); ++face)
 				{
 					if ((*face).bodyId == body.bodyId) { // each body gets a face, any face would do just so it does not belong to any other body
-						(*face).valid = false;
-						(*face).pFaceSource->put_TrackingId(body.trackingId);
-						IFaceFrame* pFaceFrame = nullptr;
-						HRESULT hResult = (*face).pFaceReader->AcquireLatestFrame(&pFaceFrame);
-						if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
-							BOOLEAN bFaceTracked = false;
-
-							hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-							if (SUCCEEDED(hResult) && bFaceTracked) {
-								IFaceFrameResult* pFaceResult = nullptr;
-								hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
-								if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-									// Face Point bugbug all these need some sort of error handling and safe state so data is not accessed on an error
-									hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, (*face).facePoint);
-									// bugbug add error handling
-									hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&(*face).boundingBox);
-									hResult = pFaceResult->get_FaceRotationQuaternion(&(*face).faceRotation);
-									hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, (*face).faceProperty);
-									(*face).valid = true;
-
-								}
-								SafeRelease(pFaceResult);
-							}
-						}
-						SafeRelease(pFaceFrame);
+						(*face).pFaceSource->put_TrackingId(body.trackingId); // make sure these are in sync
 					}
+					(*face).valid = false;
+					// works here
+					IFaceFrame* pFaceFrame = nullptr;
+					// works here
+					HRESULT hResult = (*face).pFaceReader->AcquireLatestFrame(&pFaceFrame); // try every frame
+					// works here when acquiure fails
 
+					//this works when run for a bit if (pFaceFrame != nullptr)
+					//{
+						//(*face).valid = true; // fails here
+						//break;
+					//}
+					if (SUCCEEDED(hResult) && pFaceFrame != nullptr) { //only gets past here if data is read, there fore AcquireLatestFrame us the bad guy
+						BOOLEAN bFaceTracked = false;
+						// worked once here but only once, now it just fails
+						hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
+						if (SUCCEEDED(hResult) && bFaceTracked) {
+							IFaceFrameResult* pFaceResult = nullptr;
+							hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
+							if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
+								// Face Point bugbug all these need some sort of error handling and safe state so data is not accessed on an error
+								hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, (*face).facePoint);
+								// bugbug add error handling
+								hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&(*face).boundingBox);
+								hResult = pFaceResult->get_FaceRotationQuaternion(&(*face).faceRotation);
+								hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, (*face).faceProperty);
+								(*face).valid = true;
+
+							}
+							SafeRelease(pFaceResult);
+						}
+					}
+					SafeRelease(pFaceFrame);
 				}
 			}
 		}
