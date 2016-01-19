@@ -11,14 +11,36 @@ namespace From2552Software {
 	public:
 		Kinect2552() {
 			pSensor = nullptr;
+			width = 0;
+			height = 0;
+			pColorReader = nullptr;
+			pBodyReader = nullptr;
+			pDepthReader = nullptr;
+			pDescription = nullptr;
+			pDepthSource = nullptr;
+			pColorSource = nullptr;
+			pBodySource = nullptr;
+			pCoordinateMapper = nullptr;
 		}
 		void open();
+		
 		IKinectSensor* getSensor() {
+			assert(pSensor);
 			return pSensor;
+		}
+		ICoordinateMapper* getCoordinateMapper() {
+			assert(pCoordinateMapper);
+			return pCoordinateMapper;
+		}
+		IBodyFrameReader* getBodyReader() {
+			assert(pBodyReader);
+			return pBodyReader;
 		}
 		void coordinateMapper();
 		friend class KinectFaces;
 		friend class KinectFace;
+		friend class KinectBodies;
+		friend class KinectBody;
 
 	private:
 		IKinectSensor* pSensor;
@@ -29,20 +51,38 @@ namespace From2552Software {
 		IDepthFrameSource* pDepthSource;
 		IColorFrameSource* pColorSource;
 		IBodyFrameSource*  pBodySource;
-
-
+		
 		ICoordinateMapper* pCoordinateMapper;
+
+		int width;
+		int height;
+
 
 		// Color Table
 		vector<ofColor> colors;
 
-		template<class Interface> static void SafeRelease(Interface *& pInterfaceToRelease)
+		
+
+	};
+	//base class
+	class Kinect2552BaseClass {
+	public:
+		void setup(Kinect2552 *pKinectIn) { pKinect = pKinectIn; valid = false;	};
+		Kinect2552 *getKinect() { assert(pKinect); return pKinect; }
+		void draw() {};
+		bool ObjectValid() { return valid; } // data is in a good state
+		void SetValid(bool b = true) { valid = b; };
+
+		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
 		{
 			if (pInterfaceToRelease != NULL) {
 				pInterfaceToRelease->Release();
 				pInterfaceToRelease = NULL;
 			}
 		}
+	private:
+		Kinect2552 *pKinect;
+		bool valid; // true when data is valid
 
 	};
 }

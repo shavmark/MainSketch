@@ -50,6 +50,9 @@
     <ClCompile Include="src\kinect2552.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\body.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -115,6 +118,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\kinect2552.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\body.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

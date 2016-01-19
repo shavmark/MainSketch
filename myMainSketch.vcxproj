@@ -179,6 +179,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="src\body.cpp" />
     <ClCompile Include="src\face.cpp" />
     <ClCompile Include="src\kinect2552.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -197,6 +198,7 @@
     <ClCompile Include="..\..\..\addons\ofxXmlSettings\libs\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\body.h" />
     <ClInclude Include="src\face.h" />
     <ClInclude Include="src\kinect2552.h" />
     <ClInclude Include="src\ofApp.h" />

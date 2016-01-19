@@ -2,7 +2,7 @@
 
 namespace From2552Software {
 
-	KinectFaces::KinectFaces() {
+	KinectFaces::KinectFaces()  {
 
 		// features are the same for all faces
 		features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
@@ -33,13 +33,12 @@ namespace From2552Software {
 	// get the face readers
 	void KinectFaces::setup(Kinect2552 *kinectInput) {
 		
-		pKinect = kinectInput;
+		Kinect2552BaseClass::setup(kinectInput);
 
-		// we need a unique ID for bodies at this point, we are assuming that its an index but this could change, should be done in ofKinectLib maybe, not sure
 		for (int i = 0; i < BODY_COUNT; ++i) {
-			KinectFace face(i);
+			KinectFace face(getKinect());
 
-			HRESULT hResult = CreateFaceFrameSource(pKinect->pSensor, face.faceId, features, &face.pFaceSource);
+			HRESULT hResult = CreateFaceFrameSource(getKinect()->getSensor(), 0, features, &face.pFaceSource);
 			if (FAILED(hResult)) {
 				std::cerr << "Error : CreateFaceFrameSource" << std::endl;
 				return; //bugbug add error handling
@@ -62,7 +61,7 @@ namespace From2552Software {
 		ofFill();
 		
 		for (auto face : faces) {
-			if (face.valid) {
+			if (face.ObjectValid()) {
 				// testing ofDrawCircle(400, 100, 30);
 				if (face.faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 				{
@@ -164,13 +163,19 @@ namespace From2552Software {
 		*pRoll = static_cast<int>(std::atan2(2 * (x * y + w * z), w * w + x * x - y * y - z * z) / M_PI * 180.0f);
 	}
 
+	// data is not valid
+	void KinectFaces::invalidate() {
+		for (int count = 0; count < BODY_COUNT; count++) {
+			faces[count].SetValid(false);
+		}
+	}
 	// add faces to the bodies
 	void KinectFaces::update() {
 
-		// Body Frame
+		invalidate();
 		
 		IBodyFrame* pBodyFrame = nullptr;
-		HRESULT hResult = pKinect->pBodyReader->AcquireLatestFrame(&pBodyFrame);
+		HRESULT hResult = getKinect()->pBodyReader->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
 			IBody* pBody[BODY_COUNT] = { 0 };
 			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
@@ -190,10 +195,10 @@ namespace From2552Software {
 				}
 			}
 			for (int count = 0; count < BODY_COUNT; count++) {
-				Kinect2552::SafeRelease(pBody[count]);
+				SafeRelease(pBody[count]);
 			}
 		}
-		Kinect2552::SafeRelease(pBodyFrame);
+		SafeRelease(pBodyFrame);
 
 		// Face Frame
 		for (int count = 0; count < BODY_COUNT; count++) {
@@ -225,7 +230,7 @@ namespace From2552Software {
 						if (SUCCEEDED(hResult)) {
 						}
 
-						faces[count].valid = true;
+						faces[count].SetValid();
 
 						//if (boundingBox.Left && boundingBox.Bottom) {
 							//int offset = 30;
@@ -234,10 +239,10 @@ namespace From2552Software {
 							//}
 						//}
 					}
-					Kinect2552::SafeRelease(pFaceResult);
+					SafeRelease(pFaceResult);
 				}
 			}
-			Kinect2552::SafeRelease(pFaceFrame);
+			SafeRelease(pFaceFrame);
 		}
 
 #if old

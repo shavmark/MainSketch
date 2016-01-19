@@ -23,6 +23,7 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
 
+		From2552Software::KinectBodies bodies;
 		From2552Software::KinectFaces faces;
 		From2552Software::Kinect2552 myKinect;
 };

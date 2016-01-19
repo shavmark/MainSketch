@@ -12,12 +12,10 @@
 
 namespace From2552Software {
 
-	class KinectFace {
+	class KinectFace : public Kinect2552BaseClass {
 	public:
-		KinectFace(int bodyID = -1) { 
-			faceId = bodyID; // uses the same id but would not have to
-			bodyId = bodyID;
-			valid = false; 
+		KinectFace(Kinect2552 *pKinect=nullptr) {
+			Kinect2552BaseClass::setup(pKinect);
 		}
 
 		PointF leftEye() { return facePoint[FacePointType_EyeLeft]; };
@@ -27,7 +25,6 @@ namespace From2552Software {
 		PointF mouthCornerRight() { return facePoint[FacePointType_MouthCornerRight]; };
 
 		friend class KinectFaces;
-		bool valid; // true when data is valid
 
 	protected:
 		PointF facePoint[FacePointType::FacePointType_Count];
@@ -36,11 +33,9 @@ namespace From2552Software {
 		Vector4 faceRotation;
 		IFaceFrameReader* pFaceReader;
 		IFaceFrameSource* pFaceSource;
-		int faceId;
-		int bodyId; // map face to body
 	};
 
-	class KinectFaces {
+	class KinectFaces : Kinect2552BaseClass {
 	public:
 		KinectFaces();
 
@@ -48,6 +43,7 @@ namespace From2552Software {
 		void update();
 		void draw();
 		void drawProjected(int x, int y, int width, int height);
+		void invalidate();
 
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
@@ -58,7 +54,6 @@ namespace From2552Software {
 
 		vector<KinectFace> faces;
 
-		Kinect2552 *pKinect;
 	};
 
 }

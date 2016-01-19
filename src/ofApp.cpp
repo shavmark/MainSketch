@@ -1,22 +1,22 @@
 #include "ofApp.h"
 #include "utils.h"
 
-int previewWidth = 640;
-int previewHeight = 480;
 
 
 //--------------------------------------------------------------
 void ofApp::setup(){
 
 	myKinect.open();
-	faces.setup(&myKinect);
+	//faces.setup(&myKinect);
+	bodies.setup(&myKinect);
 
-	ofSetWindowShape(previewWidth * 2, previewHeight * 2);
+	//ofSetWindowShape(previewWidth * 2, previewHeight * 2);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	faces.update();
+	//faces.update();
+	bodies.update();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -79,7 +79,7 @@ void ofApp::draw(){
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	faces.draw();
-	
+	bodies.draw();
 
 }
 
