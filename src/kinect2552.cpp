@@ -69,7 +69,7 @@ namespace From2552Software {
 
 		pDescription->get_Width(&width); // 1920
 		pDescription->get_Height(&height); // 1080
-		unsigned int bufferSize = width * height * 4 * sizeof(unsigned char);
+		bufferSize = width * height * 4 * sizeof(unsigned char);
 		ofSetWindowShape(width, height);
 
 		hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);

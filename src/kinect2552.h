@@ -57,6 +57,7 @@ namespace From2552Software {
 		int width;
 		int height;
 
+		unsigned int bufferSize;
 
 		// Color Table
 		vector<ofColor> colors;
