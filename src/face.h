@@ -3,6 +3,7 @@
 #include "ofxKinectForWindows2.h"
 #include "Kinect.Face.h"
 #include "Body.h"
+#include "kinect.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -45,27 +46,17 @@ namespace From2552Software {
 		KinectFaces();
 
 		void setup(IKinectSensor *sensor);
-		void update(vector<ofxKinectForWindows2::Data::Body>, IBodyFrameReader*);
-		void draw(vector<ofxKinectForWindows2::Data::Body> bodies);
-		void drawProjected(vector<ofxKinectForWindows2::Data::Body> bodies, int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj);
+		void update(IBodyFrameReader*);
+		void draw();
+		void drawProjected(int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj);
 
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
 
 		std::string property[FaceProperty::FaceProperty_Count];
 
-		// Color Table
-		vector<ofColor> colors;
-
 		DWORD features;
 
-		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
-		{
-			if (pInterfaceToRelease != NULL) {
-				pInterfaceToRelease->Release();
-				pInterfaceToRelease = NULL;
-			}
-		}
 		vector<KinectFace> faces;
 
 	};

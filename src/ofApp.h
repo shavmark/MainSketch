@@ -25,4 +25,5 @@ class ofApp : public ofBaseApp{
 
 		ofxKinectForWindows2::Device kinect;
 		From2552Software::KinectFaces faces;
+		From2552Software::Kinect myKinect;
 };

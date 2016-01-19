@@ -47,6 +47,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="src\kinect.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -109,6 +112,9 @@
       <Filter>addons\ofxXmlSettings\libs</Filter>
     </ClInclude>
     <ClInclude Include="src\face.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\kinect.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

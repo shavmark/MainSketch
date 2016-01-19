@@ -13,6 +13,8 @@ void ofApp::setup(){
 	kinect.initInfraredSource();
 	kinect.initBodySource();
 	kinect.initBodyIndexSource();
+
+	myKinect.open();
 	faces.setup(kinect.getSensor());
 
 	ofSetWindowShape(previewWidth * 2, previewHeight * 2);
@@ -22,7 +24,7 @@ void ofApp::setup(){
 void ofApp::update(){
 	//kinect.update();
 
-	faces.update(kinect.getBodySource()->getBodies(), kinect.getBodySource()->getReader());
+	faces.update(kinect.getBodySource()->getReader());
 
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -83,7 +85,7 @@ void ofApp::draw(){
 	//float colorTop = (previewHeight - colorHeight) / 2.0;
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
-	faces.draw(kinect.getBodySource()->getBodies());
+	faces.draw();
 	
 
 }

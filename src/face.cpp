@@ -27,13 +27,6 @@ namespace From2552Software {
 		property[6] = "MouthMoved";
 		property[7] = "LookingAway";
 
-		// Color Table, gives each body its own color
-		colors.push_back(ofColor(255, 0, 0));
-		colors.push_back(ofColor(0, 0, 255));
-		colors.push_back(ofColor(255, 255, 0));
-		colors.push_back(ofColor(255, 0, 255));
-		colors.push_back(ofColor(0, 255, 255));
-
 	};
 
 
@@ -60,7 +53,7 @@ namespace From2552Software {
 
 	}
 
-	void KinectFaces::draw(vector<ofxKinectForWindows2::Data::Body> bodies)
+	void KinectFaces::draw()
 	{
 		ofBackground(0);
 		ofSetColor(0, 0, 255);
@@ -168,7 +161,7 @@ namespace From2552Software {
 	}
 
 	// add faces to the bodies
-	void KinectFaces::update(vector<ofxKinectForWindows2::Data::Body> bodies, IBodyFrameReader*pBodyReader) {
+	void KinectFaces::update(IBodyFrameReader*pBodyReader) {
 
 		// Body Frame
 		
@@ -193,10 +186,10 @@ namespace From2552Software {
 				}
 			}
 			for (int count = 0; count < BODY_COUNT; count++) {
-				SafeRelease(pBody[count]);
+				Kinect::SafeRelease(pBody[count]);
 			}
 		}
-		SafeRelease(pBodyFrame);
+		Kinect::SafeRelease(pBodyFrame);
 
 		// Face Frame
 		for (int count = 0; count < BODY_COUNT; count++) {
@@ -212,26 +205,18 @@ namespace From2552Software {
 						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
 						// bugbug add error handling
 
-						// Face Point
-						PointF facePoint[FacePointType::FacePointType_Count];
 						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
 						if (SUCCEEDED(hResult)) {
 						}
 
-						// Face Bounding Box
-						RectI boundingBox;
 						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
 						if (SUCCEEDED(hResult)) {
 						}
 
-						// Face Rotation
-						Vector4 faceRotation;
 						hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
 						if (SUCCEEDED(hResult)) {
 						}
 
-						// Face Property
-						DetectionResult faceProperty[FaceProperty::FaceProperty_Count];
 						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
 						if (SUCCEEDED(hResult)) {
 						}
@@ -245,10 +230,10 @@ namespace From2552Software {
 							//}
 						//}
 					}
-					SafeRelease(pFaceResult);
+					Kinect::SafeRelease(pFaceResult);
 				}
 			}
-			SafeRelease(pFaceFrame);
+			Kinect::SafeRelease(pFaceFrame);
 		}
 
 #if old
@@ -289,7 +274,7 @@ namespace From2552Software {
 #endif
 	}
 
-	void KinectFaces::drawProjected(vector<ofxKinectForWindows2::Data::Body> bodies, int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj) {
+	void KinectFaces::drawProjected(int x, int y, int width, int height, ofxKFW2::ProjectionCoordinates proj) {
 		return;
 		/*
 		ofPushStyle();
