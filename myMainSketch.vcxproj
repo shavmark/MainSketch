@@ -180,7 +180,7 @@
   <ItemGroup>
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="src\face.cpp" />
-    <ClCompile Include="src\kinect.cpp" />
+    <ClCompile Include="src\kinect2552.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\ofApp.cpp" />
     <ClCompile Include="..\..\..\addons\ofxGui\src\ofxBaseGui.cpp" />
@@ -198,7 +198,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\face.h" />
-    <ClInclude Include="src\kinect.h" />
+    <ClInclude Include="src\kinect2552.h" />
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="..\..\..\addons\ofxGui\src\ofxBaseGui.h" />
     <ClInclude Include="..\..\..\addons\ofxGui\src\ofxButton.h" />

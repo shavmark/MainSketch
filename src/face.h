@@ -2,7 +2,7 @@
 #include "ofMain.h"
 #include "Kinect.Face.h"
 #include "Body.h"
-#include "kinect.h"
+#include "kinect2552.h"
 
 #define _USE_MATH_DEFINES
 #include <cmath>
@@ -44,7 +44,7 @@ namespace From2552Software {
 	public:
 		KinectFaces();
 
-		void setup(Kinect *);
+		void setup(Kinect2552 *);
 		void update();
 		void draw();
 		void drawProjected(int x, int y, int width, int height);
@@ -58,7 +58,7 @@ namespace From2552Software {
 
 		vector<KinectFace> faces;
 
-		Kinect *pKinect;
+		Kinect2552 *pKinect;
 	};
 
 }

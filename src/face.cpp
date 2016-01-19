@@ -31,7 +31,7 @@ namespace From2552Software {
 
 
 	// get the face readers
-	void KinectFaces::setup(Kinect *kinectInput) {
+	void KinectFaces::setup(Kinect2552 *kinectInput) {
 		
 		pKinect = kinectInput;
 
@@ -190,10 +190,10 @@ namespace From2552Software {
 				}
 			}
 			for (int count = 0; count < BODY_COUNT; count++) {
-				Kinect::SafeRelease(pBody[count]);
+				Kinect2552::SafeRelease(pBody[count]);
 			}
 		}
-		Kinect::SafeRelease(pBodyFrame);
+		Kinect2552::SafeRelease(pBodyFrame);
 
 		// Face Frame
 		for (int count = 0; count < BODY_COUNT; count++) {
@@ -234,10 +234,10 @@ namespace From2552Software {
 							//}
 						//}
 					}
-					Kinect::SafeRelease(pFaceResult);
+					Kinect2552::SafeRelease(pFaceResult);
 				}
 			}
-			Kinect::SafeRelease(pFaceFrame);
+			Kinect2552::SafeRelease(pFaceFrame);
 		}
 
 #if old

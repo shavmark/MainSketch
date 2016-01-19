@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "kinect2552.h"
 #include "face.h"
 
 class ofApp : public ofBaseApp{
@@ -23,5 +24,5 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 
 		From2552Software::KinectFaces faces;
-		From2552Software::Kinect myKinect;
+		From2552Software::Kinect2552 myKinect;
 };
