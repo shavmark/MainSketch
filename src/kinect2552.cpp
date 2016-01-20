@@ -1,9 +1,12 @@
 #include "kinect2552.h"
 
 namespace From2552Software {
+	
 
 	void Kinect2552::open()
 	{
+		
+
 		HRESULT hResult = S_OK;
 		hResult = GetDefaultKinectSensor(&pSensor);
 		if (FAILED(hResult)) {
@@ -15,7 +18,6 @@ namespace From2552Software {
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IKinectSensor::Open()" << std::endl;
 		}
-
 		
 		hResult = pSensor->get_ColorFrameSource(&pColorSource);
 		if (FAILED(hResult)) {
@@ -30,17 +32,6 @@ namespace From2552Software {
 			return;
 		}
 
-		hResult = pSensor->get_DepthFrameSource(&pDepthSource);
-		if (FAILED(hResult)) {
-			std::cerr << "Error : IKinectSensor::get_DepthFrameSource()" << std::endl;
-			return;
-		}
-
-		hResult = pDepthSource->OpenReader(&pDepthReader);
-		if (FAILED(hResult)) {
-			std::cerr << "Error : IDepthFrameSource::OpenReader()" << std::endl;
-			return;
-		}
 
 		hResult = pColorSource->OpenReader(&pColorReader);
 		if (FAILED(hResult)) {
@@ -57,13 +48,6 @@ namespace From2552Software {
 		hResult = pColorSource->get_FrameDescription(&pDescription);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IColorFrameSource::get_FrameDescription()" << std::endl;
-			return;
-		}
-
-		IFrameDescription* pDepthDescription;
-		hResult = pDepthSource->get_FrameDescription(&pDepthDescription);
-		if (FAILED(hResult)) {
-			std::cerr << "Error : IDepthFrameSource::get_FrameDescription()" << std::endl;
 			return;
 		}
 

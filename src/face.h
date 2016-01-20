@@ -44,7 +44,7 @@ namespace From2552Software {
 		void draw();
 		void drawProjected(int x, int y, int width, int height);
 		void invalidate();
-
+		int baseline();
 	private:
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
 
@@ -53,7 +53,17 @@ namespace From2552Software {
 		DWORD features;
 
 		vector<KinectFace> faces;
-
+		ICoordinateMapper* pCoordinateMapper;
+		IFrameDescription* pDescription;
+		IBodyFrameReader* pBodyReader;
+		IColorFrameReader* pColorReader;
+		IBodyFrameSource* pBodySource;
+		IColorFrameSource* pColorSource;
+		IKinectSensor* pSensor;
+		IFaceFrameReader* pFaceReader[BODY_COUNT];
+		IFaceFrameSource* pFaceSource[BODY_COUNT];
+		bool readfacereaders;
+		
 	};
 
 }

@@ -15,7 +15,9 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	//faces.baseline();
 	faces.update();
+	
 	//bodies.update();
 #if sample	
 	//--

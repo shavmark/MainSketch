@@ -6,7 +6,7 @@
 //http://www.pointclouds.org/
 
 namespace From2552Software {
-
+	
 	class Kinect2552 {
 	public:
 		Kinect2552() {
@@ -61,7 +61,7 @@ namespace From2552Software {
 
 		// Color Table
 		vector<ofColor> colors;
-
+	
 		
 
 	};

@@ -27,6 +27,15 @@ namespace From2552Software {
 		property[6] = "MouthMoved";
 		property[7] = "LookingAway";
 
+		pCoordinateMapper=nullptr;
+		pDescription = nullptr;
+		pBodyReader = nullptr;
+		pColorReader = nullptr;
+		pBodySource = nullptr;
+		pColorSource = nullptr;
+		pSensor = nullptr;
+		readfacereaders = false;
+
 	};
 
 
@@ -60,9 +69,9 @@ namespace From2552Software {
 		ofSetColor(0, 0, 255);
 		ofFill();
 		//ofDrawCircle(400, 100, 30);
+		
 		for (int count = 0; count < BODY_COUNT; count++) {
 			if (faces[count].ObjectValid()) {
-				ofDrawCircle(600, 100, 30);
 				if (faces[count].faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 				{
 					ofDrawCircle(faces[count].leftEye().X, faces[count].leftEye().Y, 5);
@@ -169,10 +178,196 @@ namespace From2552Software {
 			faces[count].SetValid(false);
 		}
 	}
+	// This code should always work, but draw() needs to be called too, it replaces update 
+	int KinectFaces::baseline()
+	{
+		// Sensor
+		HRESULT hResult = S_OK;
+		if (pSensor == nullptr)
+		{
+			hResult = GetDefaultKinectSensor(&pSensor);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : GetDefaultKinectSensor" << std::endl;
+				return -1;
+			}
+
+			hResult = pSensor->Open();
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IKinectSensor::Open()" << std::endl;
+				return -1;
+			}
+
+			// Source
+			hResult = pSensor->get_ColorFrameSource(&pColorSource);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IKinectSensor::get_ColorFrameSource()" << std::endl;
+				return -1;
+			}
+
+			hResult = pSensor->get_BodyFrameSource(&pBodySource);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IKinectSensor::get_BodyFrameSource()" << std::endl;
+				return -1;
+			}
+
+			// Reader
+			hResult = pColorSource->OpenReader(&pColorReader);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IColorFrameSource::OpenReader()" << std::endl;
+				return -1;
+			}
+
+			hResult = pBodySource->OpenReader(&pBodyReader);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IBodyFrameSource::OpenReader()" << std::endl;
+				return -1;
+			}
+
+			// Description
+			hResult = pColorSource->get_FrameDescription(&pDescription);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IColorFrameSource::get_FrameDescription()" << std::endl;
+				return -1;
+			}
+
+			int width = 0;
+			int height = 0;
+			pDescription->get_Width(&width); // 1920
+			pDescription->get_Height(&height); // 1080
+			unsigned int bufferSize = width * height * 4 * sizeof(unsigned char);
+
+
+			// Coordinate Mapper
+			hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);
+			if (FAILED(hResult)) {
+				std::cerr << "Error : IKinectSensor::get_CoordinateMapper()" << std::endl;
+				return -1;
+			}
+
+			
+			DWORD features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
+				| FaceFrameFeatures::FaceFrameFeatures_PointsInColorSpace
+				| FaceFrameFeatures::FaceFrameFeatures_RotationOrientation
+				| FaceFrameFeatures::FaceFrameFeatures_Happy
+				| FaceFrameFeatures::FaceFrameFeatures_RightEyeClosed
+				| FaceFrameFeatures::FaceFrameFeatures_LeftEyeClosed
+				| FaceFrameFeatures::FaceFrameFeatures_MouthOpen
+				| FaceFrameFeatures::FaceFrameFeatures_MouthMoved
+				| FaceFrameFeatures::FaceFrameFeatures_LookingAway
+				| FaceFrameFeatures::FaceFrameFeatures_Glasses
+				| FaceFrameFeatures::FaceFrameFeatures_FaceEngagement;
+
+			for (int count = 0; count < BODY_COUNT; count++) {
+				KinectFace face(getKinect());
+				// Source
+				hResult = CreateFaceFrameSource(pSensor, 0, features, &pFaceSource[count]);
+				if (FAILED(hResult)) {
+					std::cerr << "Error : CreateFaceFrameSource" << std::endl;
+					return -1;
+				}
+
+				// Reader
+				hResult = pFaceSource[count]->OpenReader(&pFaceReader[count]);
+				if (FAILED(hResult)) {
+					std::cerr << "Error : IFaceFrameSource::OpenReader()" << std::endl;
+					return -1;
+				}
+				faces.push_back(face);
+			}
+			// Face Property Table
+			std::string property[FaceProperty::FaceProperty_Count];
+			property[0] = "Happy";
+			property[1] = "Engaged";
+			property[2] = "WearingGlasses";
+			property[3] = "LeftEyeClosed";
+			property[4] = "RightEyeClosed";
+			property[5] = "MouthOpen";
+			property[6] = "MouthMoved";
+			property[7] = "LookingAway";
+		}
+		while (1) {
+			// Color Frame
+			/*
+			IColorFrame* pColorFrame = nullptr;
+			hResult = pColorReader->AcquireLatestFrame(&pColorFrame);
+			if (SUCCEEDED(hResult)) {
+				//hResult = pColorFrame->CopyConvertedFrameDataToArray(bufferSize, reinterpret_cast<BYTE*>(bufferMat.data), ColorImageFormat::ColorImageFormat_Bgra);
+				if (SUCCEEDED(hResult)) {
+					//cv::resize(bufferMat, faceMat, cv::Size(), 0.5, 0.5);
+				}
+			}
+			SafeRelease(pColorFrame);
+			*/
+			// Body Frame
+
+			IBodyFrame* pBodyFrame = nullptr;
+			hResult = pBodyReader->AcquireLatestFrame(&pBodyFrame);
+			if (SUCCEEDED(hResult)) {
+				IBody* pBody[BODY_COUNT] = { 0 };
+				hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+				if (SUCCEEDED(hResult)) {
+					for (int count = 0; count < BODY_COUNT; count++) {
+						BOOLEAN bTracked = false;
+						hResult = pBody[count]->get_IsTracked(&bTracked);
+						if (SUCCEEDED(hResult) && bTracked) {
+
+							// Set TrackingID to Detect Face
+							UINT64 trackingId = _UI64_MAX;
+							hResult = pBody[count]->get_TrackingId(&trackingId);
+							if (SUCCEEDED(hResult)) {
+								pFaceSource[count]->put_TrackingId(trackingId);
+							}
+						}
+					}
+				}
+				for (int count = 0; count < BODY_COUNT; count++) {
+					SafeRelease(pBody[count]);
+				}
+			}
+			SafeRelease(pBodyFrame);
+
+			// Face Frame
+
+			for (int count = 0; count < BODY_COUNT; count++) {
+				IFaceFrame* pFaceFrame = nullptr;
+				hResult = pFaceReader[count]->AcquireLatestFrame(&pFaceFrame);
+				if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
+					BOOLEAN bFaceTracked = false;
+					hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
+					if (SUCCEEDED(hResult) && bFaceTracked) {
+						IFaceFrameResult* pFaceResult = nullptr;
+						hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
+						if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
+							
+
+							// Face Point
+							hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
+							if (SUCCEEDED(hResult)) {
+							}
+
+
+							// Face Bounding Box
+							RectI boundingBox;
+							hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
+							if (SUCCEEDED(hResult)) {
+								faces[count].SetValid();
+								return 0;
+							}
+
+						}
+						SafeRelease(pFaceResult);
+					}
+				}
+				SafeRelease(pFaceFrame);
+			}
+
+		}
+
+		return 0;
+
+	}
 	// add faces to the bodies
 	void KinectFaces::update() {
-
-		invalidate();
 		
 		IBodyFrame* pBodyFrame = nullptr;
 		HRESULT hResult = getKinect()->pBodyReader->AcquireLatestFrame(&pBodyFrame);
@@ -189,7 +384,6 @@ namespace From2552Software {
 						hResult = pBody[count]->get_TrackingId(&trackingId);
 						if (SUCCEEDED(hResult)) {
 							faces[count].pFaceSource->put_TrackingId(trackingId);
-							//pFaceSource[count]->put_TrackingId(trackingId);
 						}
 					}
 				}
@@ -199,10 +393,11 @@ namespace From2552Software {
 			}
 		}
 	
-
+		SafeRelease(pBodyFrame);
 		// Face Frame
 		for (int count = 0; count < BODY_COUNT; count++) {
 			IFaceFrame* pFaceFrame = nullptr;
+			faces[count].SetValid(false);
 			hResult = faces[count].pFaceReader->AcquireLatestFrame(&pFaceFrame);
 			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
 				BOOLEAN bFaceTracked = false;
@@ -211,7 +406,6 @@ namespace From2552Software {
 					IFaceFrameResult* pFaceResult = nullptr;
 					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
 					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
 						// bugbug add error handling
 
 						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
@@ -243,7 +437,7 @@ namespace From2552Software {
 				}
 			}
 			SafeRelease(pFaceFrame);
-			SafeRelease(pBodyFrame);
+			
 		}
 
 #if old
