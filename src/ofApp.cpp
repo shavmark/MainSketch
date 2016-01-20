@@ -7,16 +7,16 @@
 void ofApp::setup(){
 
 	myKinect.open();
-	//faces.setup(&myKinect);
-	bodies.setup(&myKinect);
+	faces.setup(&myKinect);
+	//bodies.setup(&myKinect);
 
-	//ofSetWindowShape(previewWidth * 2, previewHeight * 2);
+	ofSetWindowShape(640 * 2, 480 * 2);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	//faces.update();
-	bodies.update();
+	faces.update();
+	//bodies.update();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -79,7 +79,7 @@ void ofApp::draw(){
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	faces.draw();
-	bodies.draw();
+	//bodies.draw();
 
 }
 

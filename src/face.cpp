@@ -59,22 +59,22 @@ namespace From2552Software {
 		ofBackground(0);
 		ofSetColor(0, 0, 255);
 		ofFill();
-		
-		for (auto face : faces) {
-			if (face.ObjectValid()) {
-				// testing ofDrawCircle(400, 100, 30);
-				if (face.faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
+		//ofDrawCircle(400, 100, 30);
+		for (int count = 0; count < BODY_COUNT; count++) {
+			if (faces[count].ObjectValid()) {
+				ofDrawCircle(600, 100, 30);
+				if (faces[count].faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 				{
-					ofDrawCircle(face.leftEye().X, face.leftEye().Y, 5);
+					ofDrawCircle(faces[count].leftEye().X, faces[count].leftEye().Y, 5);
 				}
-				if (face.faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
+				if (faces[count].faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
 				{
-					ofDrawCircle(face.rightEye().X, face.rightEye().Y, 5);
+					ofDrawCircle(faces[count].rightEye().X, faces[count].rightEye().Y, 5);
 				}
-				ofDrawCircle(face.nose().X, face.nose().Y, 5);
-				float width = abs(face.mouthCornerRight().X - face.mouthCornerLeft().X);
+				ofDrawCircle(faces[count].nose().X, faces[count].nose().Y, 5);
+				float width = abs(faces[count].mouthCornerRight().X - faces[count].mouthCornerLeft().X);
 				float height;
-				if (face.faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
+				if (faces[count].faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
 				{
 					height = 50.0;
 				}
@@ -83,7 +83,7 @@ namespace From2552Software {
 					height = 1.0;
 				}
 
-				ofDrawEllipse(face.mouthCornerLeft().X, face.mouthCornerLeft().Y, width, height);
+				ofDrawEllipse(faces[count].mouthCornerLeft().X, faces[count].mouthCornerLeft().Y, width, height);
 
 			}
 		}
@@ -198,7 +198,7 @@ namespace From2552Software {
 				SafeRelease(pBody[count]);
 			}
 		}
-		SafeRelease(pBodyFrame);
+	
 
 		// Face Frame
 		for (int count = 0; count < BODY_COUNT; count++) {
@@ -243,6 +243,7 @@ namespace From2552Software {
 				}
 			}
 			SafeRelease(pFaceFrame);
+			SafeRelease(pBodyFrame);
 		}
 
 #if old
