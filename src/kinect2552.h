@@ -193,8 +193,6 @@ namespace From2552Software {
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
 		void setTrackingID(int index, UINT64 trackingId) { faces[index].pFaceSource->put_TrackingId(trackingId); };
 
-		std::string property[FaceProperty::FaceProperty_Count];
-
 		DWORD features;
 
 

@@ -5,6 +5,8 @@
 
 //http://openframeworks.cc/ofBook/chapters/c++11.html\
 
+//http://openframeworks.cc/tutorials/graphics/generativemesh.html
+
 //--------------------------------------------------------------
 void ofApp::setup(){
 	

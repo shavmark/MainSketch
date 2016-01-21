@@ -143,7 +143,7 @@ namespace From2552Software {
 			}
 			// Joint
 			for (int type = 0; type < JointType::JointType_Count; type++) {
-				if (!drawface && joints[type].JointType == JointType::JointType_Head) {
+				if (!drawface && (joints[type].JointType == JointType::JointType_Head| joints[type].JointType == JointType::JointType_Neck)) {
 					continue;// assume face is drawn elsewhere
 				}
 				colorSpacePoint = { 0 };
@@ -151,7 +151,6 @@ namespace From2552Software {
 				int x = static_cast<int>(colorSpacePoint.X);
 				int y = static_cast<int>(colorSpacePoint.Y);
 				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
-					//cv::circle(bufferMat, cv::Point(x, y), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA);
 					ofDrawCircle(x, y, 10);
 				}
 			}
@@ -400,15 +399,6 @@ KinectFaces::KinectFaces() {
 		| FaceFrameFeatures::FaceFrameFeatures_Glasses
 		| FaceFrameFeatures::FaceFrameFeatures_FaceEngagement;
 
-	// Face Property Table
-	property[0] = "Happy";
-	property[1] = "Engaged";
-	property[2] = "WearingGlasses";
-	property[3] = "LeftEyeClosed";
-	property[4] = "RightEyeClosed";
-	property[5] = "MouthOpen";
-	property[6] = "MouthMoved";
-	property[7] = "LookingAway";
 
 
 };
@@ -467,16 +457,21 @@ void KinectFace::draw()
 		}
 		ofDrawCircle(nose().X, nose().Y, 5);
 		float width = abs(mouthCornerRight().X - mouthCornerLeft().X);
-		float height;
-		if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
-		{
-			height = 50.0;
+		if (faceProperty[FaceProperty_Happy] == DetectionResult_Yes) {
+			ofDrawCurve(mouthCornerLeft().X- 50, mouthCornerLeft().Y-50, mouthCornerLeft().X, mouthCornerRight().Y+20, mouthCornerRight().X, mouthCornerRight().Y+20, mouthCornerRight().X+ 50, mouthCornerRight().Y - 50);
 		}
-		else
-		{
-			height = 1.0;
+		else {
+			float height;
+			if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
+			{
+				height = 50.0;
+			}
+			else
+			{
+				height = 1.0;
+			}
+			ofDrawEllipse(mouthCornerLeft().X, mouthCornerLeft().Y, width, height);
 		}
-		ofDrawEllipse(mouthCornerLeft().X, mouthCornerLeft().Y, width, height);
 	}
 
 }
