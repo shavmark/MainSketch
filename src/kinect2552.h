@@ -1,6 +1,8 @@
 #pragma once
+#define Foundation_UnWindows_INCLUDED
 #include "ofMain.h"
 #include "Kinect.Face.h"
+
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -10,8 +12,28 @@
 //http://www.pointclouds.org/
 
 namespace From2552Software {
+
+	//base class for things like faces
+	class Kinect2552BaseClass {
+	public:
+		Kinect2552BaseClass() { valid = false; }
+		
+		bool objectValid() { return valid; } // data is in a good state
+		void setValid(bool b = true) { valid = b; };
+
+		bool checkPointer(IUnknown *p, string message);
+		bool checkPointer(Kinect2552BaseClass *p, string message);
+		void logError(string error);
+		void logVerbose(string message) { logTrace(message, OF_LOG_VERBOSE); }; // promote trace, make it obvious and easy
+		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE);
+		void logError(HRESULT hResult, string message = "");
+
+	private:
+		bool valid; // true when data is valid
+
+	};
 	
-	class Kinect2552 {
+	class Kinect2552 : public Kinect2552BaseClass {
 	public:
 		Kinect2552() {
 			pSensor = nullptr;
@@ -26,18 +48,18 @@ namespace From2552Software {
 			pBodySource = nullptr;
 			pCoordinateMapper = nullptr;
 		}
-		void open();
+		bool open();
 		
 		IKinectSensor* getSensor() {
-			assert(pSensor);
+			checkPointer(pSensor, "getSensor");
 			return pSensor;
 		}
 		ICoordinateMapper* getCoordinateMapper() {
-			assert(pCoordinateMapper);
+			checkPointer(pCoordinateMapper, "getCoordinateMapper");
 			return pCoordinateMapper;
 		}
 		IBodyFrameReader* getBodyReader() {
-			assert(pBodyReader);
+			checkPointer(pBodyReader, "getBodyReader");
 			return pBodyReader;
 		}
 		void coordinateMapper();
@@ -65,18 +87,14 @@ namespace From2552Software {
 
 		// Color Table
 		vector<ofColor> colors;
-	
-		
-
 	};
-	//base class
-	class Kinect2552BaseClass {
+
+	//base class for things like faces
+	class Kinect2552BaseClassBodyItems : public Kinect2552BaseClass {
 	public:
 		void setup(Kinect2552 *pKinectIn);
-		Kinect2552 *getKinect() { assert(pKinect); return pKinect; }
+		Kinect2552 *getKinect() { checkPointer(pKinect, "getKinect"); return pKinect; }
 		void draw() {};
-		bool ObjectValid() { return valid; } // data is in a good state
-		void SetValid(bool b = true) { valid = b; };
 
 		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
 		{
@@ -108,18 +126,15 @@ namespace From2552Software {
 	private:
 		
 		Kinect2552 *pKinect;
-		bool valid; // true when data is valid
-
-
-
 	};
 
-	class KinectBody : public Kinect2552BaseClass {
+	class KinectBody : public Kinect2552BaseClassBodyItems {
 	public:
 		KinectBody(Kinect2552 *pKinect = nullptr) {
-			Kinect2552BaseClass::setup(pKinect);
+			Kinect2552BaseClassBodyItems::setup(pKinect);
 			leftHandState = HandState::HandState_Unknown;
 			rightHandState = HandState::HandState_Unknown;
+			logVerbose("KinectBody");
 		}
 		friend class KinectBodies;
 	private:
@@ -129,7 +144,7 @@ namespace From2552Software {
 		PointF leanAmount;
 	};
 
-	class KinectBodies : public Kinect2552BaseClass {
+	class KinectBodies : public Kinect2552BaseClassBodyItems {
 	public:
 		void update();
 		void draw();
@@ -138,13 +153,14 @@ namespace From2552Software {
 		vector<KinectBody> bodies;
 	};
 
-	class KinectFace : public Kinect2552BaseClass {
+	class KinectFace : public Kinect2552BaseClassBodyItems {
 	public:
 		KinectFace(Kinect2552 *pKinect = nullptr) {
-			Kinect2552BaseClass::setup(pKinect);
+			Kinect2552BaseClassBodyItems::setup(pKinect);
+			logVerbose("KinectFace");
 		}
 		IFaceFrameReader* getFaceReader() {
-			assert(pFaceReader);
+			checkPointer(pFaceReader, "getFaceReader");
 			return pFaceReader;
 		}
 		PointF leftEye() { return facePoint[FacePointType_EyeLeft]; };
@@ -164,7 +180,7 @@ namespace From2552Software {
 		IFaceFrameSource* pFaceSource;
 	};
 
-	class KinectFaces : Kinect2552BaseClass {
+	class KinectFaces : Kinect2552BaseClassBodyItems {
 	public:
 		KinectFaces();
 

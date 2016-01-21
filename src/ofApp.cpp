@@ -1,13 +1,19 @@
 #include "ofApp.h"
 #include "utils.h"
 
+// follow this https://github.com/openframeworks/openFrameworks/wiki/oF-code-style, but let them w/o bugs cast the first flames
 
+//http://openframeworks.cc/ofBook/chapters/c++11.html\
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+	
 
-	myKinect.open();
+	if (!myKinect.open()) {
+		return; // no kinect most likley
+	}
 	faces.setup(&myKinect);
+
 	//bodies.setup(&myKinect);
 
 	ofSetWindowShape(640 * 2, 480 * 2);

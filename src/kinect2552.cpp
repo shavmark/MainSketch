@@ -2,10 +2,50 @@
 
 namespace From2552Software {
 
-	void Kinect2552BaseClass::setup(Kinect2552 *pKinectIn) {
+
+	bool Kinect2552BaseClass::checkPointer(IUnknown *p, string message) {
+		logVerbose(message); // should give some good trace
+		if (p == nullptr) {
+			logError("in valid pointer " + message);
+			return false;
+		}
+		return true;
+	}
+	bool Kinect2552BaseClass::checkPointer(Kinect2552BaseClass *p, string message) {
+		logVerbose(message); // should give some good trace
+		if (p == nullptr) {
+			logError("in valid pointer " + message);
+			return false;
+		}
+		return true;
+	}
+
+	void Kinect2552BaseClass::logError(string errorIn) {
+		string error = "Error " + errorIn + " ";
+		error += __FILE__;
+		error += ": " + __LINE__;
+		ofLog(OF_LOG_FATAL_ERROR, error);
+	}
+	void Kinect2552BaseClass::logError(HRESULT hResult, string message) {
+		
+		std::ostringstream stringStream;
+		stringStream << message;
+		stringStream << ":  ";
+		stringStream << hResult; //todo example this to text bugbug
+
+		logError(stringStream.str());
+
+	}
+
+	void Kinect2552BaseClass::logTrace(string message, ofLogLevel level) {
+		ofLog(level, message);
+	}
+
+	void Kinect2552BaseClassBodyItems::setup(Kinect2552 *pKinectIn) {
 		pKinect = pKinectIn;
-		valid = false;
+
 #if _DEBUG
+		// used to create direct, simple code for the obscure bugs kinect and openframeworks seem to have
 		pCoordinateMapper = nullptr;
 		pDescription = nullptr;
 		pBodyReader = nullptr;
@@ -19,7 +59,7 @@ namespace From2552Software {
 	
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
 
-		Kinect2552BaseClass::setup(kinectInput);
+		Kinect2552BaseClassBodyItems::setup(kinectInput);
 
 		for (int i = 0; i < BODY_COUNT; ++i) {
 			KinectBody body(getKinect());
@@ -35,7 +75,7 @@ namespace From2552Software {
 
 		for (auto body : bodies) {
 			ofDrawCircle(400, 100, 30);
-			if (body.ObjectValid()) {
+			if (body.objectValid()) {
 				ofDrawCircle(600, 100, 30);
 
 				ColorSpacePoint colorSpacePoint = { 0 };
@@ -94,9 +134,6 @@ namespace From2552Software {
 
 	void KinectBodies::update() {
 
-
-		//works here bodies[0].SetValid();  return;
-
 		IBodyFrame* pBodyFrame = nullptr;
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
@@ -106,7 +143,7 @@ namespace From2552Software {
 			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
 			if (SUCCEEDED(hResult)) {
 				for (int count = 0; count < BODY_COUNT; count++) {
-					bodies[count].SetValid(false);
+					bodies[count].setValid(false);
 					// breaks here
 					BOOLEAN bTracked = false;
 					hResult = pBody[count]->get_IsTracked(&bTracked);
@@ -118,7 +155,7 @@ namespace From2552Software {
 						if (SUCCEEDED(hResult)) {
 							//faces[count].pFaceSource->put_TrackingId(trackingId);
 						}
-						// failing here
+						
 						// get joints
 						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].joints);
 						if (SUCCEEDED(hResult)) {
@@ -135,7 +172,7 @@ namespace From2552Software {
 							hResult = pBody[count]->get_Lean(&bodies[count].leanAmount);
 							if (SUCCEEDED(hResult)) {
 							}
-							bodies[count].SetValid();
+							bodies[count].setValid();
 						}
 
 						/*// Activity
@@ -233,48 +270,49 @@ namespace From2552Software {
 	}
 
 
-	void Kinect2552::open()
+	bool Kinect2552::open()
 	{
 		
 		HRESULT hResult = GetDefaultKinectSensor(&pSensor);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : GetDefaultKinectSensor" << std::endl;
-			return; //bugbug add error/exception handling
+			logError(hResult, "GetDefaultKinectSensor");
+			return false; 
 		}
 
 		hResult = pSensor->Open();
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IKinectSensor::Open()" << std::endl;
+			logError(hResult, "IKinectSensor::Open");
+			return false;
 		}
 		
 		hResult = pSensor->get_ColorFrameSource(&pColorSource);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IKinectSensor::get_ColorFrameSource()" << std::endl;
-			return;
+			logError(hResult, "get_ColorFrameSource");
+			return false;
 		}
 		
 		hResult = pSensor->get_BodyFrameSource(&pBodySource);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IKinectSensor::get_BodyFrameSource()" << std::endl;
-			return;
+			logError(hResult, "get_BodyFrameSource");
+			return false;
 		}
 
 		hResult = pColorSource->OpenReader(&pColorReader);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IColorFrameSource::OpenReader()" << std::endl;
-			return;
+			logError(hResult, "IColorFrameSource::OpenReader");
+			return false;
 		}
 		
 		hResult = pBodySource->OpenReader(&pBodyReader);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IBodyFrameSource::OpenReader()" << std::endl;
-			return;
+			logError(hResult, "IBodyFrameSource::OpenReader()");
+			return false;
 		}
 
 		hResult = pColorSource->get_FrameDescription(&pDescription);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IColorFrameSource::get_FrameDescription()" << std::endl;
-			return;
+			logError(hResult, "get_FrameDescription");
+			return false;
 		}
 
 		pDescription->get_Width(&width); // 1920
@@ -284,8 +322,8 @@ namespace From2552Software {
 
 		hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IKinectSensor::get_CoordinateMapper()" << std::endl;
-			return;
+			logError(hResult, "get_CoordinateMapper");
+			return false;
 		}
 
 		// Color Table, gives each body its own color
@@ -294,6 +332,10 @@ namespace From2552Software {
 		colors.push_back(ofColor(255, 255, 0));
 		colors.push_back(ofColor(255, 0, 255));
 		colors.push_back(ofColor(0, 255, 255));
+
+		logTrace("Kinect signed on, life is good.");
+
+		return true;
 	}
 
 	void Kinect2552::coordinateMapper()
@@ -378,6 +420,8 @@ namespace From2552Software {
 }
 KinectFaces::KinectFaces() {
 
+	logVerbose("KinectFaces");
+
 	// features are the same for all faces
 	features = FaceFrameFeatures::FaceFrameFeatures_BoundingBoxInColorSpace
 		| FaceFrameFeatures::FaceFrameFeatures_PointsInColorSpace
@@ -408,20 +452,20 @@ KinectFaces::KinectFaces() {
 // get the face readers
 void KinectFaces::setup(Kinect2552 *kinectInput) {
 
-	Kinect2552BaseClass::setup(kinectInput);
+	Kinect2552BaseClassBodyItems::setup(kinectInput);
 
 	for (int i = 0; i < BODY_COUNT; ++i) {
 		KinectFace face(getKinect());
 
 		HRESULT hResult = CreateFaceFrameSource(getKinect()->getSensor(), 0, features, &face.pFaceSource);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : CreateFaceFrameSource" << std::endl;
-			return; //bugbug add error handling
+			logError(hResult, "CreateFaceFrameSource");
+			return; 
 		}
 
 		hResult = face.pFaceSource->OpenReader(&face.pFaceReader);
 		if (FAILED(hResult)) {
-			std::cerr << "Error : IFaceFrameSource::OpenReader()" << std::endl;
+			logError(hResult, "IFaceFrameSource::OpenReader");
 			return;
 		}
 		faces.push_back(face);
@@ -437,7 +481,8 @@ void KinectFaces::draw()
 	//ofDrawCircle(400, 100, 30);
 
 	for (int count = 0; count < BODY_COUNT; count++) {
-		if (faces[count].ObjectValid()) {
+		if (faces[count].objectValid()) {
+			//bugbug todo add smile, it repplaces the face stuff
 			ofDrawCircle(400, 100, 30);
 			if (faces[count].faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 			{
@@ -539,7 +584,7 @@ void KinectFaces::ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* 
 	*pRoll = static_cast<int>(std::atan2(2 * (x * y + w * z), w * w + x * x - y * y - z * z) / M_PI * 180.0f);
 }
 
-void  Kinect2552BaseClass::aquireBodyFrame()
+void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 {
 
 	IBodyFrame* pBodyFrame = nullptr;
@@ -576,82 +621,6 @@ void KinectFaces::update() {
 		if (aquireFaceFrame())
 			break;
 	}
-#if findthebug
-	// loop may take some time at first call while kinect warms up
-	while (1) {
-
-		IBodyFrame* pBodyFrame = nullptr;
-		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
-		if (SUCCEEDED(hResult)) {
-			IBody* pBody[BODY_COUNT] = { 0 };
-			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-			if (SUCCEEDED(hResult)) {
-				for (int count = 0; count < BODY_COUNT; count++) {
-					BOOLEAN bTracked = false;
-					hResult = pBody[count]->get_IsTracked(&bTracked);
-					if (SUCCEEDED(hResult) && bTracked) {
-						// Set TrackingID to Detect Face
-						UINT64 trackingId = _UI64_MAX;
-						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (SUCCEEDED(hResult)) {
-							faces[count].pFaceSource->put_TrackingId(trackingId);
-						}
-					}
-				}
-			}
-			for (int count = 0; count < BODY_COUNT; count++) {
-				SafeRelease(pBody[count]);
-			}
-		}
-
-		SafeRelease(pBodyFrame);
-		// Face Frame
-		for (int count = 0; count < BODY_COUNT; count++) {
-			IFaceFrame* pFaceFrame = nullptr;
-			faces[count].SetValid(false);
-			hResult = faces[count].getFaceReader()->AcquireLatestFrame(&pFaceFrame);
-			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
-				BOOLEAN bFaceTracked = false;
-				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-				if (SUCCEEDED(hResult) && bFaceTracked) {
-					IFaceFrameResult* pFaceResult = nullptr;
-					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
-					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
-						if (SUCCEEDED(hResult)) {
-							faces[count].SetValid();
-							SafeRelease(pFaceResult);
-							SafeRelease(pFaceFrame);
-							return;
-						}
-
-						//if (boundingBox.Left && boundingBox.Bottom) {
-						//int offset = 30;
-						//for (std::vector<std::string>::iterator it = result.begin(); it != result.end(); it++, offset += 30) {
-						//		cv::putText(bufferMat, *it, cv::Point(boundingBox.Left, boundingBox.Bottom + offset), cv::FONT_HERSHEY_COMPLEX, 1.0f, static_cast<cv::Scalar>(color[count]), 2, CV_AA);
-						//}
-						//}
-					}
-					SafeRelease(pFaceResult);
-				}
-			}
-			SafeRelease(pFaceFrame);
-		}
-		return;
-	}
-#endif
 
 }
 
@@ -712,28 +681,36 @@ bool KinectFaces::aquireFaceFrame()
 				IFaceFrameResult* pFaceResult = nullptr;
 				hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
 				if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-
-					// Face Point
+					logVerbose("aquireFaceFrame");
+					
 					hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
-					if (SUCCEEDED(hResult)) {
+					if (FAILED(hResult)) {
+						logError(hResult, "GetFacePointsInColorSpace");
+						return false;
 					}
 
 					hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
-					if (SUCCEEDED(hResult)) {
+					if (FAILED(hResult)) {
+						logError(hResult, "get_FaceRotationQuaternion");
+						return false;
 					}
 
 					hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
-					if (SUCCEEDED(hResult)) {
+					if (FAILED(hResult)) {
+						logError(hResult, "GetFaceProperties");
+						return false;
 					}
 
 					// Face Bounding Box
 					hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
-					if (SUCCEEDED(hResult)) {
-						SafeRelease(pFaceResult);
-						SafeRelease(pFaceFrame);
-						faces[count].SetValid();
-						return true;
+					if (FAILED(hResult)) {
+						logError(hResult, "get_FaceBoundingBoxInColorSpace");
+						return false;
 					}
+					SafeRelease(pFaceResult);
+					SafeRelease(pFaceFrame);
+					faces[count].setValid();
+					return true;
 
 				}
 				SafeRelease(pFaceResult);
