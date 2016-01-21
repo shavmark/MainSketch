@@ -28,26 +28,25 @@ namespace From2552Software {
 		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE);
 		void logError(HRESULT hResult, string message = "");
 
+		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
+		{
+			if (pInterfaceToRelease != NULL) {
+				pInterfaceToRelease->Release();
+				pInterfaceToRelease = NULL;
+			}
+		}
+
 	private:
 		bool valid; // true when data is valid
+
+
 
 	};
 	
 	class Kinect2552 : public Kinect2552BaseClass {
 	public:
-		Kinect2552() {
-			pSensor = nullptr;
-			width = 0;
-			height = 0;
-			pColorReader = nullptr;
-			pBodyReader = nullptr;
-			pDepthReader = nullptr;
-			pDescription = nullptr;
-			pDepthSource = nullptr;
-			pColorSource = nullptr;
-			pBodySource = nullptr;
-			pCoordinateMapper = nullptr;
-		}
+		Kinect2552();
+		~Kinect2552();
 		bool open();
 		
 		IKinectSensor* getSensor() {
@@ -96,13 +95,6 @@ namespace From2552Software {
 		Kinect2552 *getKinect() { checkPointer(pKinect, "getKinect"); return pKinect; }
 		void draw() {};
 
-		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
-		{
-			if (pInterfaceToRelease != NULL) {
-				pInterfaceToRelease->Release();
-				pInterfaceToRelease = NULL;
-			}
-		}
 
 #if _DEBUG
 		// here just to support the baseline() function which allows if needed one function to prove out ideas etc
@@ -136,6 +128,7 @@ namespace From2552Software {
 			rightHandState = HandState::HandState_Unknown;
 			logVerbose("KinectBody");
 		}
+		void draw(bool drawface=true);
 		friend class KinectBodies;
 	private:
 		Joint joints[JointType::JointType_Count];
@@ -144,14 +137,7 @@ namespace From2552Software {
 		PointF leanAmount;
 	};
 
-	class KinectBodies : public Kinect2552BaseClassBodyItems {
-	public:
-		void update();
-		void draw();
-		void setup(Kinect2552 *kinectInput);
-
-		vector<KinectBody> bodies;
-	};
+	
 
 	class KinectFace : public Kinect2552BaseClassBodyItems {
 	public:
@@ -159,10 +145,19 @@ namespace From2552Software {
 			Kinect2552BaseClassBodyItems::setup(pKinect);
 			logVerbose("KinectFace");
 		}
+		~KinectFace();
+		void cleanup();
+
 		IFaceFrameReader* getFaceReader() {
 			checkPointer(pFaceReader, "getFaceReader");
 			return pFaceReader;
 		}
+		IFaceFrameSource* getFaceSource() {
+			checkPointer(pFaceSource, "getFaceSource");
+			return pFaceSource;
+		}
+		void draw();
+
 		PointF leftEye() { return facePoint[FacePointType_EyeLeft]; };
 		PointF rightEye() { return facePoint[FacePointType_EyeRight]; };
 		PointF nose() { return facePoint[FacePointType_Nose]; };
@@ -178,11 +173,13 @@ namespace From2552Software {
 		Vector4 faceRotation;
 		IFaceFrameReader* pFaceReader;
 		IFaceFrameSource* pFaceSource;
+
 	};
 
-	class KinectFaces : Kinect2552BaseClassBodyItems {
+	class KinectFaces : public Kinect2552BaseClassBodyItems {
 	public:
 		KinectFaces();
+		~KinectFaces();
 
 		void setup(Kinect2552 *);
 		void update();
@@ -190,11 +187,11 @@ namespace From2552Software {
 		void drawProjected(int x, int y, int width, int height);
 		
 		int baseline();
-	private:
+	protected:
 		vector<KinectFace> faces;
 		bool aquireFaceFrame();
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
-		virtual void setTrackingID(int index, UINT64 trackingId) { faces[index].pFaceSource->put_TrackingId(trackingId); };
+		void setTrackingID(int index, UINT64 trackingId) { faces[index].pFaceSource->put_TrackingId(trackingId); };
 
 		std::string property[FaceProperty::FaceProperty_Count];
 
@@ -203,4 +200,21 @@ namespace From2552Software {
 
 	};
 
+
+	class KinectBodies : public KinectFaces {
+	public:
+		KinectBodies(bool usefaces = false) : KinectFaces(){ useFaces(usefaces); }
+		void update();
+		void draw();
+		void setup(Kinect2552 *kinectInput);
+
+		void useFaces(bool usefaces = true)  { includeFaces = usefaces; }
+		bool usingFaces() { return includeFaces; }
+	private:
+		bool includeFaces;
+		void setTrackingID(int index, UINT64 trackingId) {
+			if (usingFaces()) { faces[index].getFaceSource()->put_TrackingId(trackingId); };
+		}
+		vector<KinectBody> bodies;
+	};
 }

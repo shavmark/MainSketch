@@ -8,13 +8,13 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	
+	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
 
-	if (!myKinect.open()) {
-		return; // no kinect most likley
-	}
-	faces.setup(&myKinect);
+	myKinect.open();
 
-	//bodies.setup(&myKinect);
+	//faces.setup(&myKinect);
+	bodies.useFaces();
+	bodies.setup(&myKinect);
 
 	ofSetWindowShape(640 * 2, 480 * 2);
 }
@@ -22,9 +22,10 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
 	//faces.baseline(); //use to debug, can do what ever needed to get things to work, to create a working base line
-	faces.update();
+	//faces.update();
 	
-	//bodies.update();
+	bodies.update();
+
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -86,8 +87,8 @@ void ofApp::draw(){
 	//float colorTop = (previewHeight - colorHeight) / 2.0;
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
-	faces.draw();
-	//bodies.draw();
+	//faces.draw();
+	bodies.draw();
 
 }
 

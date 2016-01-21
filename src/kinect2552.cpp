@@ -31,7 +31,7 @@ namespace From2552Software {
 		std::ostringstream stringStream;
 		stringStream << message;
 		stringStream << ":  ";
-		stringStream << hResult; //todo example this to text bugbug
+		stringStream << std::hex << hResult; //todo example this to text bugbug
 
 		logError(stringStream.str());
 
@@ -56,79 +56,120 @@ namespace From2552Software {
 		readfacereaders = false;
 #endif
 	};
-	
+	Kinect2552::Kinect2552() {
+		pSensor = nullptr;
+		width = 0;
+		height = 0;
+		pColorReader = nullptr;
+		pBodyReader = nullptr;
+		pDepthReader = nullptr;
+		pDescription = nullptr;
+		pDepthSource = nullptr;
+		pColorSource = nullptr;
+		pBodySource = nullptr;
+		pCoordinateMapper = nullptr;
+	}
+
+	Kinect2552::~Kinect2552() {
+		if (pSensor) {
+			pSensor->Close();
+		}
+		SafeRelease(pSensor);
+		SafeRelease(pColorReader);
+		SafeRelease(pBodyReader);
+		SafeRelease(pDepthReader);
+		SafeRelease(pDescription);
+		SafeRelease(pDepthSource);
+		SafeRelease(pColorSource);
+		SafeRelease(pBodySource);
+		SafeRelease(pCoordinateMapper);
+	}
+
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
 
-		Kinect2552BaseClassBodyItems::setup(kinectInput);
+		if (usingFaces()) {
+			KinectFaces::setup(kinectInput);
+		}
+		else {
+			Kinect2552BaseClassBodyItems::setup(kinectInput); // skip the base class setup, its not needed here
+		}
 
-		for (int i = 0; i < BODY_COUNT; ++i) {
+		for (int i = 0; i < BODY_COUNT; ++i) { 
 			KinectBody body(getKinect());
 			bodies.push_back(body);
 		}
 	}
+	void KinectBody::draw(bool drawface) {
 
+		if (objectValid()) {
+			//ofDrawCircle(600, 100, 30);
+
+			ColorSpacePoint colorSpacePoint = { 0 };
+			//ofDrawCircle(400, 100, 30);
+			HRESULT hResult = getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[JointType::JointType_HandLeft].Position, &colorSpacePoint);
+			// fails here
+			if (SUCCEEDED(hResult)) {
+				//ofDrawCircle(700, 100, 30);
+				int x = static_cast<int>(colorSpacePoint.X);
+				int y = static_cast<int>(colorSpacePoint.Y);
+				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+					if (leftHandState == HandState::HandState_Open) {
+						ofDrawCircle(x, y, 30);
+					}
+					else if (leftHandState == HandState::HandState_Closed) {
+						ofDrawCircle(x, y, 5);
+					}
+					else if (leftHandState == HandState::HandState_Lasso) {
+						ofDrawCircle(x, y, 15);
+					}
+				}
+			}
+			colorSpacePoint = { 0 };
+			hResult = getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[JointType::JointType_HandRight].Position, &colorSpacePoint);
+			if (SUCCEEDED(hResult)) {
+				int x = static_cast<int>(colorSpacePoint.X);
+				int y = static_cast<int>(colorSpacePoint.Y);
+				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+					if (rightHandState == HandState::HandState_Open) {
+						ofDrawCircle(x, y, 30);
+					}
+					else if (rightHandState == HandState::HandState_Closed) {
+						ofDrawCircle(x, y, 5);
+					}
+					else if (rightHandState == HandState::HandState_Lasso) {
+						ofDrawCircle(x, y, 15);
+					}
+				}
+			}
+			// Joint
+			for (int type = 0; type < JointType::JointType_Count; type++) {
+				if (!drawface && joints[type].JointType == JointType::JointType_Head) {
+					continue;// assume face is drawn elsewhere
+				}
+				colorSpacePoint = { 0 };
+				getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[type].Position, &colorSpacePoint);
+				int x = static_cast<int>(colorSpacePoint.X);
+				int y = static_cast<int>(colorSpacePoint.Y);
+				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+					//cv::circle(bufferMat, cv::Point(x, y), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA);
+					ofDrawCircle(x, y, 10);
+				}
+			}
+		}
+
+	}
 	void KinectBodies::draw() {
 
 		ofBackground(0);
-		ofSetColor(0, 0, 255);
+		ofSetColor(0, 255, 0);
 		ofFill();
 
 		for (auto body : bodies) {
-			ofDrawCircle(400, 100, 30);
-			if (body.objectValid()) {
-				ofDrawCircle(600, 100, 30);
+			body.draw(!usingFaces());
+		}
 
-				ColorSpacePoint colorSpacePoint = { 0 };
-				ofDrawCircle(400, 100, 30);
-				HRESULT hResult = getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(body.joints[JointType::JointType_HandLeft].Position, &colorSpacePoint);
-				// fails here
-				if (SUCCEEDED(hResult)) {
-					ofDrawCircle(700, 100, 30);
-					int x = static_cast<int>(colorSpacePoint.X);
-					int y = static_cast<int>(colorSpacePoint.Y);
-					if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
-						if (body.leftHandState == HandState::HandState_Open) {
-							ofDrawCircle(x, y, 50);
-						}
-						else if (body.leftHandState == HandState::HandState_Closed) {
-							ofDrawCircle(x, y, 5);
-						}
-						else if (body.leftHandState == HandState::HandState_Lasso) {
-							ofDrawCircle(x, y, 25);
-						}
-					}
-				}
-				colorSpacePoint = { 0 };
-				hResult = getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(body.joints[JointType::JointType_HandRight].Position, &colorSpacePoint);
-				if (SUCCEEDED(hResult)) {
-					int x = static_cast<int>(colorSpacePoint.X);
-					int y = static_cast<int>(colorSpacePoint.Y);
-					if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
-						if (body.rightHandState == HandState::HandState_Open) {
-							ofDrawCircle(x, y, 50);
-						}
-						else if (body.rightHandState == HandState::HandState_Closed) {
-							ofDrawCircle(x, y, 5);
-						}
-						else if (body.rightHandState == HandState::HandState_Lasso) {
-							ofDrawCircle(x, y, 25);
-						}
-					}
-				}
-				// Joint
-				for (int type = 0; type < JointType::JointType_Count; type++) {
-					colorSpacePoint = { 0 };
-					getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(body.joints[type].Position, &colorSpacePoint);
-					int x = static_cast<int>(colorSpacePoint.X);
-					int y = static_cast<int>(colorSpacePoint.Y);
-					if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
-						//cv::circle(bufferMat, cv::Point(x, y), 5, static_cast<cv::Scalar>(color[count]), -1, CV_AA);
-						ofDrawCircle(x, y, 100);
-					}
-				}
-
-
-			}
+		if (usingFaces()) {
+			KinectFaces::draw();
 		}
 	}
 
@@ -138,7 +179,6 @@ namespace From2552Software {
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
 			IBody* pBody[BODY_COUNT] = { 0 };
-			//breaks here
 
 			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
 			if (SUCCEEDED(hResult)) {
@@ -153,120 +193,45 @@ namespace From2552Software {
 						UINT64 trackingId = _UI64_MAX;
 						hResult = pBody[count]->get_TrackingId(&trackingId);
 						if (SUCCEEDED(hResult)) {
-							//faces[count].pFaceSource->put_TrackingId(trackingId);
+							setTrackingID(count, trackingId);
 						}
-						
+							
 						// get joints
 						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].joints);
 						if (SUCCEEDED(hResult)) {
 							// Left Hand State
 							hResult = pBody[count]->get_HandLeftState(&bodies[count].leftHandState);
-							if (SUCCEEDED(hResult)) {
+							if (FAILED(hResult)) {
+								logError(hResult, "get_HandLeftState");
+								return;
 							}
-
 							// Right Hand State
 							hResult = pBody[count]->get_HandRightState(&bodies[count].rightHandState);
-							if (SUCCEEDED(hResult)) {
+							if (FAILED(hResult)) {
+								logError(hResult, "get_HandRightState");
+								return;
 							}
 							// Lean
 							hResult = pBody[count]->get_Lean(&bodies[count].leanAmount);
-							if (SUCCEEDED(hResult)) {
+							if (FAILED(hResult)) {
+								logError(hResult, "get_HandRightState");
+								return;
 							}
 							bodies[count].setValid();
 						}
-
-						/*// Activity
-						IColorFrame* pColorFrame = nullptr;
-						HRESULT hResult = getKinect()->pColorReader->AcquireLatestFrame(&pColorFrame);
-						if (SUCCEEDED(hResult)) {
-						ofPixels pixels;
-						pixels.allocate(getKinect()->width, getKinect()->height, OF_PIXELS_BGRA);
-						hResult = pColorFrame->CopyConvertedFrameDataToArray(getKinect()->bufferSize, reinterpret_cast<BYTE*>(pixels.getData()), ColorImageFormat::ColorImageFormat_Bgra);
-						if (SUCCEEDED(hResult)) {
-						}
-						}
-						UINT capacity = 0;
-						DetectionResult detectionResults = DetectionResult::DetectionResult_Unknown;
-						hResult = pBody[count]->GetActivityDetectionResults( capacity, &detectionResults );
-						if( SUCCEEDED( hResult ) ){
-						if( detectionResults == DetectionResult::DetectionResult_Yes ){
-						switch( capacity ){
-						case Activity::Activity_EyeLeftClosed:
-						std::cout << "Activity_EyeLeftClosed" << std::endl;
-						break;
-						case Activity::Activity_EyeRightClosed:
-						std::cout << "Activity_EyeRightClosed" << std::endl;
-						break;
-						case Activity::Activity_MouthOpen:
-						std::cout << "Activity_MouthOpen" << std::endl;
-						break;
-						case Activity::Activity_MouthMoved:
-						std::cout << "Activity_MouthMoved" << std::endl;
-						break;
-						case Activity::Activity_LookingAway:
-						std::cout << "Activity_LookingAway" << std::endl;
-						break;
-						default:
-						break;
-						}
-						}
-						}
-						else{
-						std::cerr << "Error : IBody::GetActivityDetectionResults()" << std::endl;
-						}*/
-
-						/*// Appearance
-						capacity = 0;
-						detectionResults = DetectionResult::DetectionResult_Unknown;
-						hResult = pBody[count]->GetAppearanceDetectionResults( capacity, &detectionResults );
-						if( SUCCEEDED( hResult ) ){
-						if( detectionResults == DetectionResult::DetectionResult_Yes ){
-						switch( capacity ){
-						case Appearance::Appearance_WearingGlasses:
-						std::cout << "Appearance_WearingGlasses" << std::endl;
-						break;
-						default:
-						break;
-						}
-						}
-						}
-						else{
-						std::cerr << "Error : IBody::GetAppearanceDetectionResults()" << std::endl;
-						}*/
-
-						/*// Expression
-						capacity = 0;
-						detectionResults = DetectionResult::DetectionResult_Unknown;
-						hResult = pBody[count]->GetExpressionDetectionResults( capacity, &detectionResults );
-						if( SUCCEEDED( hResult ) ){
-						if( detectionResults == DetectionResult::DetectionResult_Yes ){
-						switch( capacity ){
-						case Expression::Expression_Happy:
-						std::cout << "Expression_Happy" << std::endl;
-						break;
-						case Expression::Expression_Neutral:
-						std::cout << "Expression_Neutral" << std::endl;
-						break;
-						default:
-						break;
-						}
-						}
-						}
-						else{
-						std::cerr << "Error : IBody::GetExpressionDetectionResults()" << std::endl;
-						}*/
-
 					}
 				}
-				//cv::resize(bufferMat, bodyMat, cv::Size(), 0.5, 0.5);
 			}
 			for (int count = 0; count < BODY_COUNT; count++) {
 				SafeRelease(pBody[count]);
 			}
 		}
 
-		//SafeRelease(pColorFrame);
 		SafeRelease(pBodyFrame);
+
+		if (usingFaces()) {
+			aquireFaceFrame();
+		}
 	}
 
 
@@ -448,7 +413,21 @@ KinectFaces::KinectFaces() {
 
 };
 
+KinectFace::~KinectFace() {
+}
+void KinectFace::cleanup()
+{
+	// do not call in destructor as pointers are used, call when needed
+	SafeRelease(pFaceReader);
+	SafeRelease(pFaceSource);
+}
+KinectFaces::~KinectFaces() {
 
+	for (int i = 0; i < faces.size(); ++i) {
+		faces[i].cleanup(); 
+	}
+
+}
 // get the face readers
 void KinectFaces::setup(Kinect2552 *kinectInput) {
 
@@ -473,41 +452,43 @@ void KinectFaces::setup(Kinect2552 *kinectInput) {
 
 }
 
+void KinectFace::draw()
+{
+	if (objectValid()) {
+		//ofDrawCircle(400, 100, 30);
+
+		if (faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
+		{
+			ofDrawCircle(leftEye().X, leftEye().Y, 5);
+		}
+		if (faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
+		{
+			ofDrawCircle(rightEye().X, rightEye().Y, 5);
+		}
+		ofDrawCircle(nose().X, nose().Y, 5);
+		float width = abs(mouthCornerRight().X - mouthCornerLeft().X);
+		float height;
+		if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
+		{
+			height = 50.0;
+		}
+		else
+		{
+			height = 1.0;
+		}
+		ofDrawEllipse(mouthCornerLeft().X, mouthCornerLeft().Y, width, height);
+	}
+
+}
 void KinectFaces::draw()
 {
-	ofBackground(0);
+	//ofDrawCircle(400, 100, 30);
 	ofSetColor(0, 0, 255);
 	ofFill();
-	//ofDrawCircle(400, 100, 30);
-
-	for (int count = 0; count < BODY_COUNT; count++) {
-		if (faces[count].objectValid()) {
-			//bugbug todo add smile, it repplaces the face stuff
-			ofDrawCircle(400, 100, 30);
-			if (faces[count].faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
-			{
-				ofDrawCircle(faces[count].leftEye().X, faces[count].leftEye().Y, 5);
-			}
-			if (faces[count].faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
-			{
-				ofDrawCircle(faces[count].rightEye().X, faces[count].rightEye().Y, 5);
-			}
-			ofDrawCircle(faces[count].nose().X, faces[count].nose().Y, 5);
-			float width = abs(faces[count].mouthCornerRight().X - faces[count].mouthCornerLeft().X);
-			float height;
-			if (faces[count].faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
-			{
-				height = 50.0;
-			}
-			else
-			{
-				height = 1.0;
-			}
-
-			ofDrawEllipse(faces[count].mouthCornerLeft().X, faces[count].mouthCornerLeft().Y, width, height);
-
-		}
+	for (auto face : faces) {
+		face.draw();
 	}
+
 #ifdef learning
 	for (int count = 0; count < BODY_COUNT; count++) {
 		if (drawface[count]) {
