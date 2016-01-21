@@ -449,28 +449,31 @@ void KinectFace::draw()
 
 		if (faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 		{
-			ofDrawCircle(leftEye().X, leftEye().Y, 5);
+			ofDrawCircle(leftEye().X-15, leftEye().Y, 10);
 		}
 		if (faceProperty[FaceProperty_RightEyeClosed] != DetectionResult_Yes)
 		{
-			ofDrawCircle(rightEye().X, rightEye().Y, 5);
+			ofDrawCircle(rightEye().X+15, rightEye().Y, 10);
 		}
 		ofDrawCircle(nose().X, nose().Y, 5);
-		float width = abs(mouthCornerRight().X - mouthCornerLeft().X);
 		if (faceProperty[FaceProperty_Happy] == DetectionResult_Yes) {
-			ofDrawCurve(mouthCornerLeft().X- 50, mouthCornerLeft().Y-50, mouthCornerLeft().X, mouthCornerRight().Y+20, mouthCornerRight().X, mouthCornerRight().Y+20, mouthCornerRight().X+ 50, mouthCornerRight().Y - 50);
+			ofDrawCurve(mouthCornerLeft().X- 70, mouthCornerLeft().Y-70, mouthCornerLeft().X, mouthCornerRight().Y+30, mouthCornerRight().X, mouthCornerRight().Y+30, mouthCornerRight().X+ 70, mouthCornerRight().Y - 70);
 		}
 		else {
 			float height;
+			float offset = 0;
 			if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
 			{
-				height = 50.0;
+				height = 60.0;
+				offset = height/2;
 			}
 			else
 			{
-				height = 1.0;
+				height = 5.0;
+				offset = 10;
 			}
-			ofDrawEllipse(mouthCornerLeft().X, mouthCornerLeft().Y, width, height);
+			float width = abs(mouthCornerRight().X - mouthCornerLeft().X);
+			ofDrawEllipse(mouthCornerLeft().X-5, mouthCornerLeft().Y+ offset, width+5, height);
 		}
 	}
 
