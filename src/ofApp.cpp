@@ -7,18 +7,18 @@
 void ofApp::setup(){
 
 	myKinect.open();
-	//faces.setup(&myKinect);
-	bodies.setup(&myKinect);
+	faces.setup(&myKinect);
+	//bodies.setup(&myKinect);
 
 	ofSetWindowShape(640 * 2, 480 * 2);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	//faces.baseline();
-	//faces.update();
+	//faces.baseline(); //use to debug, can do what ever needed to get things to work, to create a working base line
+	faces.update();
 	
-	bodies.update();
+	//bodies.update();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -80,8 +80,8 @@ void ofApp::draw(){
 	//float colorTop = (previewHeight - colorHeight) / 2.0;
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
-	//faces.draw();
-	bodies.draw();
+	faces.draw();
+	//bodies.draw();
 
 }
 

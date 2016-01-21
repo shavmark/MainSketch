@@ -1,8 +1,10 @@
 #pragma once
-
 #include "ofMain.h"
+
 #include "kinect2552.h"
 #include "face.h"
+
+
 
 class ofApp : public ofBaseApp{
 
