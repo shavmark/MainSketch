@@ -72,7 +72,7 @@ namespace From2552Software {
 	//base class
 	class Kinect2552BaseClass {
 	public:
-		void setup(Kinect2552 *pKinectIn) { pKinect = pKinectIn; valid = false;	};
+		void setup(Kinect2552 *pKinectIn);
 		Kinect2552 *getKinect() { assert(pKinect); return pKinect; }
 		void draw() {};
 		bool ObjectValid() { return valid; } // data is in a good state
@@ -101,7 +101,12 @@ namespace From2552Software {
 		bool readfacereaders;
 #endif
 
+	protected:
+		virtual void setTrackingID(int index, UINT64 trackingId) {};
+		void aquireBodyFrame();
+
 	private:
+		
 		Kinect2552 *pKinect;
 		bool valid; // true when data is valid
 
@@ -138,7 +143,10 @@ namespace From2552Software {
 		KinectFace(Kinect2552 *pKinect = nullptr) {
 			Kinect2552BaseClass::setup(pKinect);
 		}
-
+		IFaceFrameReader* getFaceReader() {
+			assert(pFaceReader);
+			return pFaceReader;
+		}
 		PointF leftEye() { return facePoint[FacePointType_EyeLeft]; };
 		PointF rightEye() { return facePoint[FacePointType_EyeRight]; };
 		PointF nose() { return facePoint[FacePointType_Nose]; };
@@ -167,13 +175,14 @@ namespace From2552Software {
 		
 		int baseline();
 	private:
+		vector<KinectFace> faces;
+		bool aquireFaceFrame();
 		void ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* pPitch, int* pYaw, int* pRoll);
+		virtual void setTrackingID(int index, UINT64 trackingId) { faces[index].pFaceSource->put_TrackingId(trackingId); };
 
 		std::string property[FaceProperty::FaceProperty_Count];
 
 		DWORD features;
-
-		vector<KinectFace> faces;
 
 
 	};

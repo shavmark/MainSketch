@@ -1,6 +1,21 @@
 #include "kinect2552.h"
 
 namespace From2552Software {
+
+	void Kinect2552BaseClass::setup(Kinect2552 *pKinectIn) {
+		pKinect = pKinectIn;
+		valid = false;
+#if _DEBUG
+		pCoordinateMapper = nullptr;
+		pDescription = nullptr;
+		pBodyReader = nullptr;
+		pColorReader = nullptr;
+		pBodySource = nullptr;
+		pColorSource = nullptr;
+		pSensor = nullptr;
+		readfacereaders = false;
+#endif
+	};
 	
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
 
@@ -386,14 +401,6 @@ KinectFaces::KinectFaces() {
 	property[6] = "MouthMoved";
 	property[7] = "LookingAway";
 
-	pCoordinateMapper = nullptr;
-	pDescription = nullptr;
-	pBodyReader = nullptr;
-	pColorReader = nullptr;
-	pBodySource = nullptr;
-	pColorSource = nullptr;
-	pSensor = nullptr;
-	readfacereaders = false;
 
 };
 
@@ -431,7 +438,7 @@ void KinectFaces::draw()
 
 	for (int count = 0; count < BODY_COUNT; count++) {
 		if (faces[count].ObjectValid()) {
-
+			ofDrawCircle(400, 100, 30);
 			if (faces[count].faceProperty[FaceProperty_LeftEyeClosed] != DetectionResult_Yes)
 			{
 				ofDrawCircle(faces[count].leftEye().X, faces[count].leftEye().Y, 5);
@@ -532,13 +539,218 @@ void KinectFaces::ExtractFaceRotationInDegrees(const Vector4* pQuaternion, int* 
 	*pRoll = static_cast<int>(std::atan2(2 * (x * y + w * z), w * w + x * x - y * y - z * z) / M_PI * 180.0f);
 }
 
+void  Kinect2552BaseClass::aquireBodyFrame()
+{
+
+	IBodyFrame* pBodyFrame = nullptr;
+	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame); // getKinect()->getBodyReader() was pBodyReader
+	if (SUCCEEDED(hResult)) {
+		IBody* pBody[BODY_COUNT] = { 0 };
+		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+		if (SUCCEEDED(hResult)) {
+			for (int count = 0; count < BODY_COUNT; count++) {
+				BOOLEAN bTracked = false;
+				hResult = pBody[count]->get_IsTracked(&bTracked);
+				if (SUCCEEDED(hResult) && bTracked) {
+
+					// Set TrackingID to Detect Face etc
+					UINT64 trackingId = _UI64_MAX;
+					hResult = pBody[count]->get_TrackingId(&trackingId);
+					if (SUCCEEDED(hResult)) {
+						setTrackingID(count, trackingId);
+					}
+				}
+			}
+		}
+		for (int count = 0; count < BODY_COUNT; count++) {
+			SafeRelease(pBody[count]);
+		}
+	}
+	SafeRelease(pBodyFrame);
+}
+// add faces to the bodies
+void KinectFaces::update() {
+	
+	while (1) {
+		aquireBodyFrame();
+		if (aquireFaceFrame())
+			break;
+	}
+#if findthebug
+	// loop may take some time at first call while kinect warms up
+	while (1) {
+
+		IBodyFrame* pBodyFrame = nullptr;
+		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
+		if (SUCCEEDED(hResult)) {
+			IBody* pBody[BODY_COUNT] = { 0 };
+			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+			if (SUCCEEDED(hResult)) {
+				for (int count = 0; count < BODY_COUNT; count++) {
+					BOOLEAN bTracked = false;
+					hResult = pBody[count]->get_IsTracked(&bTracked);
+					if (SUCCEEDED(hResult) && bTracked) {
+						// Set TrackingID to Detect Face
+						UINT64 trackingId = _UI64_MAX;
+						hResult = pBody[count]->get_TrackingId(&trackingId);
+						if (SUCCEEDED(hResult)) {
+							faces[count].pFaceSource->put_TrackingId(trackingId);
+						}
+					}
+				}
+			}
+			for (int count = 0; count < BODY_COUNT; count++) {
+				SafeRelease(pBody[count]);
+			}
+		}
+
+		SafeRelease(pBodyFrame);
+		// Face Frame
+		for (int count = 0; count < BODY_COUNT; count++) {
+			IFaceFrame* pFaceFrame = nullptr;
+			faces[count].SetValid(false);
+			hResult = faces[count].getFaceReader()->AcquireLatestFrame(&pFaceFrame);
+			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
+				BOOLEAN bFaceTracked = false;
+				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
+				if (SUCCEEDED(hResult) && bFaceTracked) {
+					IFaceFrameResult* pFaceResult = nullptr;
+					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
+					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
+						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
+						if (SUCCEEDED(hResult)) {
+						}
+
+						hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
+						if (SUCCEEDED(hResult)) {
+						}
+
+						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
+						if (SUCCEEDED(hResult)) {
+						}
+
+						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
+						if (SUCCEEDED(hResult)) {
+							faces[count].SetValid();
+							SafeRelease(pFaceResult);
+							SafeRelease(pFaceFrame);
+							return;
+						}
+
+						//if (boundingBox.Left && boundingBox.Bottom) {
+						//int offset = 30;
+						//for (std::vector<std::string>::iterator it = result.begin(); it != result.end(); it++, offset += 30) {
+						//		cv::putText(bufferMat, *it, cv::Point(boundingBox.Left, boundingBox.Bottom + offset), cv::FONT_HERSHEY_COMPLEX, 1.0f, static_cast<cv::Scalar>(color[count]), 2, CV_AA);
+						//}
+						//}
+					}
+					SafeRelease(pFaceResult);
+				}
+			}
+			SafeRelease(pFaceFrame);
+		}
+		return;
+	}
+#endif
+
+}
+
+void KinectFaces::drawProjected(int x, int y, int width, int height) {
+	return;
+	/*
+	ofPushStyle();
+	int w, h;
+	switch (proj) {
+	case ofxKFW2::ColorCamera: w = 1920; h = 1080; break;
+	case ofxKFW2::DepthCamera: w = 512; h = 424; break;
+	}
+
+	const auto & bonesAtlas = Data::Body::getBonesAtlas();
+
+	for (auto & body : bodies) {
+	if (!body.tracked) continue;
+
+	map<JointType, ofVec2f> jntsProj;
+
+	for (auto & j : body.joints) {
+	ofVec2f & p = jntsProj[j.second.getType()] = ofVec2f();
+
+	TrackingState state = j.second.getTrackingState();
+	if (state == TrackingState_NotTracked) continue;
+
+	p.set(j.second.getProjected(coordinateMapper, proj));
+	p.x = x + p.x / w * width;
+	p.y = y + p.y / h * height;
+
+	int radius = (state == TrackingState_Inferred) ? 2 : 8;
+	ofSetColor(0, 255, 0);
+	ofCircle(p.x, p.y, radius);
+	}
+
+	for (auto & bone : bonesAtlas) {
+	drawProjectedBone(body.joints, jntsProj, bone.first, bone.second);
+	}
+
+	drawProjectedHand(body.leftHandState, jntsProj[JointType_HandLeft]);
+	drawProjectedHand(body.rightHandState, jntsProj[JointType_HandRight]);
+	}
+
+	ofPopStyle();
+	*/
+}
+// return true if face found
+bool KinectFaces::aquireFaceFrame()
+{
+
+	for (int count = 0; count < BODY_COUNT; count++) {
+		IFaceFrame* pFaceFrame = nullptr;
+		HRESULT hResult = faces[count].getFaceReader()->AcquireLatestFrame(&pFaceFrame); // faces[count].getFaceReader() was pFaceReader[count]
+		if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
+			BOOLEAN bFaceTracked = false;
+			hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
+			if (SUCCEEDED(hResult) && bFaceTracked) {
+				IFaceFrameResult* pFaceResult = nullptr;
+				hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
+				if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
+
+					// Face Point
+					hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
+					if (SUCCEEDED(hResult)) {
+					}
+
+					hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
+					if (SUCCEEDED(hResult)) {
+					}
+
+					hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
+					if (SUCCEEDED(hResult)) {
+					}
+
+					// Face Bounding Box
+					hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
+					if (SUCCEEDED(hResult)) {
+						SafeRelease(pFaceResult);
+						SafeRelease(pFaceFrame);
+						faces[count].SetValid();
+						return true;
+					}
+
+				}
+				SafeRelease(pFaceResult);
+			}
+		}
+		SafeRelease(pFaceFrame);
+	}
+	return false;
+}
+
 #if _DEBUG
-// This code should always work, but draw() needs to be called too, it replaces update when we need to figure something out
+// This code should always work, but draw() needs to be called too, it replaces update when we need to figure something out 
 int KinectFaces::baseline()
 {
 	// Sensor
 	HRESULT hResult = S_OK;
-	if (pSensor == nullptr) // was pSensor
+	if (false && pSensor == nullptr) // was pSensor
 	{
 		hResult = GetDefaultKinectSensor(&pSensor);
 		if (FAILED(hResult)) {
@@ -641,245 +853,14 @@ int KinectFaces::baseline()
 		property[7] = "LookingAway";
 	}
 	while (1) {
-		// Color Frame
-		/*
-		IColorFrame* pColorFrame = nullptr;
-		hResult = pColorReader->AcquireLatestFrame(&pColorFrame);
-		if (SUCCEEDED(hResult)) {
-		//hResult = pColorFrame->CopyConvertedFrameDataToArray(bufferSize, reinterpret_cast<BYTE*>(bufferMat.data), ColorImageFormat::ColorImageFormat_Bgra);
-		if (SUCCEEDED(hResult)) {
-		//cv::resize(bufferMat, faceMat, cv::Size(), 0.5, 0.5);
-		}
-		}
-		SafeRelease(pColorFrame);
-		*/
-		// Body Frame
-
-		IBodyFrame* pBodyFrame = nullptr;
-		hResult =pBodyReader->AcquireLatestFrame(&pBodyFrame); // was pBodyReader
-		if (SUCCEEDED(hResult)) {
-			IBody* pBody[BODY_COUNT] = { 0 };
-			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-			if (SUCCEEDED(hResult)) {
-				for (int count = 0; count < BODY_COUNT; count++) {
-					BOOLEAN bTracked = false;
-					hResult = pBody[count]->get_IsTracked(&bTracked);
-					if (SUCCEEDED(hResult) && bTracked) {
-
-						// Set TrackingID to Detect Face
-						UINT64 trackingId = _UI64_MAX;
-						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (SUCCEEDED(hResult)) {
-							pFaceSource[count]->put_TrackingId(trackingId); // faces[count].pFaceSource was pFaceSource[count]
-						}
-					}
-				}
-			}
-			for (int count = 0; count < BODY_COUNT; count++) {
-				SafeRelease(pBody[count]);
-			}
-		}
-		SafeRelease(pBodyFrame);
-
-		// Face Frame
-
-		for (int count = 0; count < BODY_COUNT; count++) {
-			IFaceFrame* pFaceFrame = nullptr;
-			hResult = pFaceReader[count]->AcquireLatestFrame(&pFaceFrame); // was pFaceReader[count]
-			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
-				BOOLEAN bFaceTracked = false;
-				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-				if (SUCCEEDED(hResult) && bFaceTracked) {
-					IFaceFrameResult* pFaceResult = nullptr;
-					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
-					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-
-
-						// Face Point
-						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
-						if (SUCCEEDED(hResult)) {
-						}
-
-
-						// Face Bounding Box
-						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
-						if (SUCCEEDED(hResult)) {
-							faces[count].SetValid();
-							return 0;
-						}
-
-					}
-					SafeRelease(pFaceResult);
-				}
-			}
-			SafeRelease(pFaceFrame);
-		}
-
+		aquireBodyFrame();
+		if (aquireFaceFrame())
+			break;
 	}
 
 	return 0;
 
 }
 #endif
-
-// add faces to the bodies
-void KinectFaces::update() {
-
-	while (1) {
-
-		IBodyFrame* pBodyFrame = nullptr;
-		HRESULT hResult = getKinect()->pBodyReader->AcquireLatestFrame(&pBodyFrame);
-		if (SUCCEEDED(hResult)) {
-			IBody* pBody[BODY_COUNT] = { 0 };
-			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-			if (SUCCEEDED(hResult)) {
-				for (int count = 0; count < BODY_COUNT; count++) {
-					BOOLEAN bTracked = false;
-					hResult = pBody[count]->get_IsTracked(&bTracked);
-					if (SUCCEEDED(hResult) && bTracked) {
-						// Set TrackingID to Detect Face
-						UINT64 trackingId = _UI64_MAX;
-						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (SUCCEEDED(hResult)) {
-							faces[count].pFaceSource->put_TrackingId(trackingId);
-						}
-					}
-				}
-			}
-			for (int count = 0; count < BODY_COUNT; count++) {
-				SafeRelease(pBody[count]);
-			}
-		}
-
-		SafeRelease(pBodyFrame);
-		// Face Frame
-		for (int count = 0; count < BODY_COUNT; count++) {
-			IFaceFrame* pFaceFrame = nullptr;
-			faces[count].SetValid(false);
-			hResult = faces[count].pFaceReader->AcquireLatestFrame(&pFaceFrame); 
-			if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
-				BOOLEAN bFaceTracked = false;
-				hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-				if (SUCCEEDED(hResult) && bFaceTracked) {
-					IFaceFrameResult* pFaceResult = nullptr;
-					hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
-					if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-						// bugbug add error handling
-
-						hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
-						if (SUCCEEDED(hResult)) {
-						}
-
-						faces[count].SetValid();
-						return;
-
-						//if (boundingBox.Left && boundingBox.Bottom) {
-						//int offset = 30;
-						//for (std::vector<std::string>::iterator it = result.begin(); it != result.end(); it++, offset += 30) {
-						//		cv::putText(bufferMat, *it, cv::Point(boundingBox.Left, boundingBox.Bottom + offset), cv::FONT_HERSHEY_COMPLEX, 1.0f, static_cast<cv::Scalar>(color[count]), 2, CV_AA);
-						//}
-						//}
-					}
-					SafeRelease(pFaceResult);
-				}
-			}
-			SafeRelease(pFaceFrame);
-		}
-
-	}
-
-#if old
-	// keep bodies and faces in sync w/o changing the shared bodies lib
-	for (auto body : bodies) {
-		if (body.tracked) {
-			// see if the body maps to a face
-			for (std::vector<KinectFace>::iterator face = faces.begin(); face != faces.end(); ++face)
-			{
-				if ((*face).bodyId == body.bodyId) { // each body gets a face, any face would do just so it does not belong to any other body
-					(*face).pFaceSource->put_TrackingId(body.trackingId); // make sure these are in sync
-				}
-				(*face).valid = false;
-				IFaceFrame* pFaceFrame = nullptr;
-				HRESULT hResult = (*face).pFaceReader->AcquireLatestFrame(&pFaceFrame); // try every frame
-				if (SUCCEEDED(hResult) && pFaceFrame != nullptr) { //only gets past here if data is read, there fore AcquireLatestFrame us the bad guy
-					BOOLEAN bFaceTracked = false;
-					hResult = pFaceFrame->get_IsTrackingIdValid(&bFaceTracked);
-					if (SUCCEEDED(hResult) && bFaceTracked) {
-						IFaceFrameResult* pFaceResult = nullptr;
-						hResult = pFaceFrame->get_FaceFrameResult(&pFaceResult);
-						if (SUCCEEDED(hResult) && pFaceResult != nullptr) {
-							// Face Point bugbug all these need some sort of error handling and safe state so data is not accessed on an error
-							hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, (*face).facePoint);
-							// bugbug add error handling
-							hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&(*face).boundingBox);
-							hResult = pFaceResult->get_FaceRotationQuaternion(&(*face).faceRotation);
-							hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, (*face).faceProperty);
-							(*face).valid = true;
-						}
-						SafeRelease(pFaceResult);
-					}
-				}
-				SafeRelease(pFaceFrame);
-			}
-		}
-	}
-#endif
-}
-
-void KinectFaces::drawProjected(int x, int y, int width, int height) {
-	return;
-	/*
-	ofPushStyle();
-	int w, h;
-	switch (proj) {
-	case ofxKFW2::ColorCamera: w = 1920; h = 1080; break;
-	case ofxKFW2::DepthCamera: w = 512; h = 424; break;
-	}
-
-	const auto & bonesAtlas = Data::Body::getBonesAtlas();
-
-	for (auto & body : bodies) {
-	if (!body.tracked) continue;
-
-	map<JointType, ofVec2f> jntsProj;
-
-	for (auto & j : body.joints) {
-	ofVec2f & p = jntsProj[j.second.getType()] = ofVec2f();
-
-	TrackingState state = j.second.getTrackingState();
-	if (state == TrackingState_NotTracked) continue;
-
-	p.set(j.second.getProjected(coordinateMapper, proj));
-	p.x = x + p.x / w * width;
-	p.y = y + p.y / h * height;
-
-	int radius = (state == TrackingState_Inferred) ? 2 : 8;
-	ofSetColor(0, 255, 0);
-	ofCircle(p.x, p.y, radius);
-	}
-
-	for (auto & bone : bonesAtlas) {
-	drawProjectedBone(body.joints, jntsProj, bone.first, bone.second);
-	}
-
-	drawProjectedHand(body.leftHandState, jntsProj[JointType_HandLeft]);
-	drawProjectedHand(body.rightHandState, jntsProj[JointType_HandRight]);
-	}
-
-	ofPopStyle();
-	*/
-}
 
 }
