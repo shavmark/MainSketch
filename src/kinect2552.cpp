@@ -68,6 +68,17 @@ namespace From2552Software {
 		pColorSource = nullptr;
 		pBodySource = nullptr;
 		pCoordinateMapper = nullptr;
+
+		// Color Table, gives each body its own color
+		colors.push_back(ofColor(255, 0, 0));
+		colors.push_back(ofColor(0, 0, 255));
+		colors.push_back(ofColor(255, 255, 0));
+		colors.push_back(ofColor(0, 255, 255));
+		colors.push_back(ofColor(255, 0, 255));
+		colors.push_back(ofColor(255, 255, 255));
+
+
+
 	}
 
 	Kinect2552::~Kinect2552() {
@@ -103,6 +114,7 @@ namespace From2552Software {
 
 		if (objectValid()) {
 			//ofDrawCircle(600, 100, 30);
+			
 
 			ColorSpacePoint colorSpacePoint = { 0 };
 			//ofDrawCircle(400, 100, 30);
@@ -159,12 +171,9 @@ namespace From2552Software {
 	}
 	void KinectBodies::draw() {
 
-		ofBackground(0);
-		ofSetColor(0, 255, 0);
-		ofFill();
-
-		for (auto body : bodies) {
-			body.draw(!usingFaces());
+		for (int count = 0; count < bodies.size(); count++) {
+			ofSetColor(getKinect()->getColor(count));
+			bodies[count].draw(!usingFaces());
 		}
 
 		if (usingFaces()) {
@@ -289,13 +298,6 @@ namespace From2552Software {
 			logError(hResult, "get_CoordinateMapper");
 			return false;
 		}
-
-		// Color Table, gives each body its own color
-		colors.push_back(ofColor(255, 0, 0));
-		colors.push_back(ofColor(0, 0, 255));
-		colors.push_back(ofColor(255, 255, 0));
-		colors.push_back(ofColor(255, 0, 255));
-		colors.push_back(ofColor(0, 255, 255));
 
 		logTrace("Kinect signed on, life is good.");
 
@@ -456,13 +458,14 @@ void KinectFace::draw()
 			ofDrawCircle(rightEye().X+15, rightEye().Y, 10);
 		}
 		ofDrawCircle(nose().X, nose().Y, 5);
-		if (faceProperty[FaceProperty_Happy] == DetectionResult_Yes) {
+		if (faceProperty[FaceProperty_Happy] == DetectionResult_Yes || faceProperty[FaceProperty_Happy] == DetectionResult_Maybe || faceProperty[FaceProperty_Happy] == DetectionResult_Unknown) {
+			// smile as much as possible
 			ofDrawCurve(mouthCornerLeft().X- 70, mouthCornerLeft().Y-70, mouthCornerLeft().X, mouthCornerRight().Y+30, mouthCornerRight().X, mouthCornerRight().Y+30, mouthCornerRight().X+ 70, mouthCornerRight().Y - 70);
 		}
 		else {
 			float height;
 			float offset = 0;
-			if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes)
+			if (faceProperty[FaceProperty_MouthOpen] == DetectionResult_Yes || faceProperty[FaceProperty_MouthOpen] == DetectionResult_Maybe)
 			{
 				height = 60.0;
 				offset = height/2;
@@ -481,11 +484,11 @@ void KinectFace::draw()
 void KinectFaces::draw()
 {
 	//ofDrawCircle(400, 100, 30);
-	ofSetColor(0, 0, 255);
-	ofFill();
-	for (auto face : faces) {
-		face.draw();
+	for (int count = 0; count < faces.size(); count++) {
+		ofSetColor(getKinect()->getColor(count));
+		faces[count].draw();
 	}
+
 
 #ifdef learning
 	for (int count = 0; count < BODY_COUNT; count++) {

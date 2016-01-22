@@ -61,6 +61,9 @@ namespace From2552Software {
 			checkPointer(pBodyReader, "getBodyReader");
 			return pBodyReader;
 		}
+		ofColor getColor(int index) {
+			return colors[index];
+		}
 		void coordinateMapper();
 		friend class KinectFaces;
 		friend class KinectFace;

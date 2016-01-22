@@ -11,6 +11,8 @@
 void ofApp::setup(){
 	
 	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
+	ofBackground(0);
+	ofFill();
 
 	myKinect.open();
 
