@@ -10,6 +10,7 @@
 
 //https://github.com/Vangos, http://www.cs.princeton.edu/~edwardz/tutorials/kinect2/kinect0_sdl.html, https://github.com/UnaNancyOwen
 //http://www.pointclouds.org/
+//https://books.google.com/books?id=CVUpCgAAQBAJ&pg=PA167&lpg=PA167&dq=GetAudioBodyCorrelation&source=bl&ots=UENPsaMG_J&sig=5RHwdiXn4T7gst6lVt9SFvp2ahw&hl=en&sa=X&ved=0ahUKEwjK9umrqL7KAhUIVz4KHVL-BEYQ6AEIPTAG#v=onepage&q=GetAudioBodyCorrelation&f=false
 
 namespace From2552Software {
 
@@ -224,6 +225,9 @@ namespace From2552Software {
 			checkPointer(pAudioSource, "getAudioSource");
 			return pAudioSource;
 		}
+		bool confident() { return  getConfidence() > 0.5f; }
+		float getAngle() { return angle; }
+		float getConfidence() { return confidence; }
 
 	protected:
 		void getAudioBeam();
@@ -233,6 +237,9 @@ namespace From2552Software {
 		IAudioBeamFrameReader* pAudioBeamReader;
 		UINT64 audioTrackingId;
 		int trackingIndex;
+		float angle;
+		float confidence;
+
 	};
 
 	class KinectBodies : public KinectFaces {

@@ -837,7 +837,9 @@ int KinectFaces::baseline()
 }
 #endif
 void KinectAudio::update() { 
+	aquireBodyFrame();
 	getAudioBeam(); 
+	//aquireBodyIndexFrame();
 }
 
 KinectAudio::KinectAudio(Kinect2552 *pKinect) {
@@ -845,6 +847,9 @@ KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	logVerbose("KinectAudio");
 	audioTrackingId = _UI64_MAX - 1; // means none
 	trackingIndex = -1;
+	angle = 0.0f;
+	confidence = 0.0f;
+
 }
 
 KinectAudio::~KinectAudio(){
@@ -875,6 +880,7 @@ void KinectAudio::aquireBodyIndexFrame() {
 	if (SUCCEEDED(hResult)) {
 		unsigned int bufferSize = 0;
 		unsigned char* buffer = nullptr;
+		float* pAudioBuffer = NULL;
 		hResult = pBodyIndexFrame->AccessUnderlyingBuffer(&bufferSize, &buffer);
 		if (SUCCEEDED(hResult)) {
 			for (int y = 0; y < getKinect()->getFrameHeight(); y++) {
@@ -919,58 +925,92 @@ void KinectAudio::aquireBodyFrame() {
 	}
 	SafeRelease(pBodyFrame);
 }
-// AudioBeam Frame
+// AudioBeam Frame https://masteringof.wordpress.com/examples/sounds/ https://masteringof.wordpress.com/projects-based-on-book/
 void KinectAudio::getAudioBeam() {
 
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = pAudioBeamReader->AcquireLatestBeamFrames(&pAudioBeamList);
 	if (SUCCEEDED(hResult)) {
 		//bugbug add error handling maybe other clean up
-		UINT beamCount=0;
+		UINT beamCount = 0;
 		hResult = pAudioBeamList->get_BeamCount(&beamCount);
 		// Only one audio beam is currently supported, but write the code in case this changes
-		for (int beam = 0; beam < beamCount; ++beam)	{
+		for (int beam = 0; beam < beamCount; ++beam) {
+			angle = 0.0f;
+			confidence = 0.0f;
 			IAudioBeamFrame* pAudioBeamFrame = nullptr;
 			hResult = pAudioBeamList->OpenAudioBeamFrame(beam, &pAudioBeamFrame);
 			if (SUCCEEDED(hResult)) {
-				UINT32 subFrameCount=0;
-				hResult = pAudioBeamFrame->get_SubFrameCount(&subFrameCount);
-				for (int subframe = 0; subframe < subFrameCount; ++subframe) {
-					IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
-					hResult = pAudioBeamFrame->GetSubFrame(subframe, &pAudioBeamSubFrame);
-					if (SUCCEEDED(hResult)) {
-						AudioBeamMode audioBeamMode;
-						hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
-						for (int body = 0; body < Kinect2552::personCount; body++) {
-							IAudioBodyCorrelation *pAudioBodyCorrelation;
-							hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(body, &pAudioBodyCorrelation);
-							SafeRelease(pAudioBodyCorrelation);
-						}
-						float beamAngle, beamAngleConfidence;
-						// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
-						hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
-						hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
-						TIMESPAN duration;
-						hResult = pAudioBeamSubFrame->get_Duration(&duration);
-						UINT32 correlationCount = 0;
-						hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
-						if (SUCCEEDED(hResult) && (correlationCount != 0)) {
-							IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
-							hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
-							if (SUCCEEDED(hResult)) {
-								hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
-							}
-							SafeRelease(pAudioBodyCorrelation);
-						}
-					}
-					SafeRelease(pAudioBeamSubFrame);
+				// Get Beam Angle and Confidence
+				IAudioBeam* pAudioBeam = nullptr;
+				hResult = pAudioBeamFrame->get_AudioBeam(&pAudioBeam);
+				if (SUCCEEDED(hResult)) {
+					pAudioBeam->get_BeamAngle(&angle); // radian [-0.872665f, 0.872665f]
+					pAudioBeam->get_BeamAngleConfidence(&confidence); // confidence [0.0f, 1.0f]
+					SafeRelease(pAudioBeam);
+				}
+				SafeRelease(pAudioBeamFrame);
+			}
+		}
+		SafeRelease(pAudioBeamList);
+	}
+
+#if 0
+	UINT32 subFrameCount = 0;
+	hResult = pAudioBeamFrame->get_SubFrameCount(&subFrameCount);
+	for (int subframe = 0; subframe < subFrameCount; ++subframe) {
+		IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
+		hResult = pAudioBeamFrame->GetSubFrame(subframe, &pAudioBeamSubFrame);
+		if (SUCCEEDED(hResult)) {
+			float* pAudioBuffer = NULL;
+			UINT cbRead = 0;
+
+			float fBeamAngle = 0.f;
+			float fBeamAngleConfidence = 0.0f;
+
+			// Get audio beam angle and confidence
+			pAudioBeamSubFrame->get_BeamAngle(&fBeamAngle);
+			pAudioBeamSubFrame->get_BeamAngleConfidence(&fBeamAngleConfidence);
+			if (fBeamAngle > 0) {
+				logVerbose("got one");
+			}
+
+			hResult = pAudioBeamSubFrame->AccessUnderlyingBuffer(&cbRead, (BYTE **)&pAudioBuffer);
+			DWORD nSampleCount = cbRead / sizeof(float);
+
+			// Calculate energy from audio
+			float fAccumulatedSquareSum = 0;
+			for (UINT i = 0; i < nSampleCount; i++) {
+				fAccumulatedSquareSum += pAudioBuffer[i] * pAudioBuffer[i];
+			}
+			AudioBeamMode audioBeamMode;
+			hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
+			for (int body = 0; body < Kinect2552::personCount; body++) {
+				IAudioBodyCorrelation *pAudioBodyCorrelation;
+				hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(body, &pAudioBodyCorrelation);
+				if (SUCCEEDED(hResult)) {
+					UINT64 trackingId;
+					pAudioBodyCorrelation->get_BodyTrackingId(&trackingId);
+					SafeRelease(pAudioBodyCorrelation);
 				}
 			}
-			SafeRelease(pAudioBeamFrame);
+			float beamAngle, beamAngleConfidence;
+			// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
+			hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
+			hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
+			TIMESPAN duration;
+			hResult = pAudioBeamSubFrame->get_Duration(&duration);
+			UINT32 correlationCount = 0;
+			hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
+			if (SUCCEEDED(hResult) && (correlationCount != 0)) {
+				IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
+				hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
+				if (SUCCEEDED(hResult)) {
+					hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
+				}
+				SafeRelease(pAudioBodyCorrelation);
+			}
 
-		}
-
-	}
-	SafeRelease(pAudioBeamList);
+#endif // 0
 }
 }
