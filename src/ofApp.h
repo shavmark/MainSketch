@@ -25,5 +25,6 @@ class ofApp : public ofBaseApp{
 
 		From2552Software::KinectBodies bodies;
 		From2552Software::KinectFaces faces;
+		From2552Software::KinectAudio audio;
 		From2552Software::Kinect2552 myKinect;
 };

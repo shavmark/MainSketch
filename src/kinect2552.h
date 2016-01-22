@@ -47,6 +47,7 @@ namespace From2552Software {
 	public:
 		Kinect2552();
 		~Kinect2552();
+
 		bool open();
 		
 		IKinectSensor* getSensor() {
@@ -61,17 +62,20 @@ namespace From2552Software {
 			checkPointer(pBodyReader, "getBodyReader");
 			return pBodyReader;
 		}
+		IBodyIndexFrameReader* getBodyIndexReader() {
+			checkPointer(pBodyIndexReader, "getBodyIndexReader");
+			return pBodyIndexReader;
+
+		}
 		ofColor getColor(int index) {
 			return colors[index];
 		}
+		int getFrameWidth() { return width; }
+		int getFrameHeight() { return height; }
 		void coordinateMapper();
-		friend class KinectFaces;
-		friend class KinectFace;
-		friend class KinectBodies;
-		friend class KinectBody;
 
 	private:
-		IKinectSensor* pSensor;
+		IKinectSensor*     pSensor;
 		IColorFrameReader* pColorReader;
 		IBodyFrameReader*  pBodyReader;
 		IDepthFrameReader* pDepthReader;
@@ -79,13 +83,14 @@ namespace From2552Software {
 		IDepthFrameSource* pDepthSource;
 		IColorFrameSource* pColorSource;
 		IBodyFrameSource*  pBodySource;
-		
+
+		IBodyIndexFrameSource* pBodyIndexSource;
+		IBodyIndexFrameReader* pBodyIndexReader;
+
 		ICoordinateMapper* pCoordinateMapper;
 
-		int width;
+		int width; // size of the kinect frames
 		int height;
-
-		unsigned int bufferSize;
 
 		// Color Table
 		vector<ofColor> colors;
@@ -201,6 +206,33 @@ namespace From2552Software {
 
 	};
 
+	class KinectAudio : public Kinect2552BaseClassBodyItems {
+	public:
+		KinectAudio(Kinect2552 *pKinect = nullptr);
+		~KinectAudio();
+
+		void setup(Kinect2552 *pKinect);
+		void update();
+		void draw() {};
+
+		IAudioBeamFrameReader* getAudioBeamReader() {
+			checkPointer(pAudioBeamReader, "getAudioBeamReader");
+			return pAudioBeamReader;
+		}
+		IAudioSource* getAudioSource() {
+			checkPointer(pAudioSource, "getAudioSource");
+			return pAudioSource;
+		}
+
+	protected:
+		void getAudioBeam();
+		void aquireBodyFrame();
+		void aquireBodyIndexFrame();
+		IAudioSource*		   pAudioSource;
+		IAudioBeamFrameReader* pAudioBeamReader;
+		UINT64 audioTrackingId;
+		int trackingIndex;
+	};
 
 	class KinectBodies : public KinectFaces {
 	public:

@@ -56,6 +56,7 @@ namespace From2552Software {
 		readfacereaders = false;
 #endif
 	};
+
 	Kinect2552::Kinect2552() {
 		pSensor = nullptr;
 		width = 0;
@@ -68,6 +69,8 @@ namespace From2552Software {
 		pColorSource = nullptr;
 		pBodySource = nullptr;
 		pCoordinateMapper = nullptr;
+		pBodyIndexSource = nullptr;
+		pBodyIndexReader = nullptr;
 
 		// Color Table, gives each body its own color
 		colors.push_back(ofColor(255, 0, 0));
@@ -94,6 +97,8 @@ namespace From2552Software {
 		SafeRelease(pColorSource);
 		SafeRelease(pBodySource);
 		SafeRelease(pCoordinateMapper);
+		SafeRelease(pBodyIndexSource);
+		SafeRelease(pBodyIndexReader);
 	}
 
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
@@ -124,7 +129,7 @@ namespace From2552Software {
 				//ofDrawCircle(700, 100, 30);
 				int x = static_cast<int>(colorSpacePoint.X);
 				int y = static_cast<int>(colorSpacePoint.Y);
-				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+				if ((x >= 0) && (x < getKinect()->getFrameWidth()) && (y >= 0) && (y < getKinect()->getFrameHeight())) {
 					if (leftHandState == HandState::HandState_Open) {
 						ofDrawCircle(x, y, 30);
 					}
@@ -141,7 +146,7 @@ namespace From2552Software {
 			if (SUCCEEDED(hResult)) {
 				int x = static_cast<int>(colorSpacePoint.X);
 				int y = static_cast<int>(colorSpacePoint.Y);
-				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+				if ((x >= 0) && (x < getKinect()->getFrameWidth()) && (y >= 0) && (y < getKinect()->getFrameHeight())) {
 					if (rightHandState == HandState::HandState_Open) {
 						ofDrawCircle(x, y, 30);
 					}
@@ -155,14 +160,17 @@ namespace From2552Software {
 			}
 			// Joint
 			for (int type = 0; type < JointType::JointType_Count; type++) {
-				if (!drawface && (joints[type].JointType == JointType::JointType_Head| joints[type].JointType == JointType::JointType_Neck)) {
-					continue;// assume face is drawn elsewhere
+				if (!drawface) {
+					if ((joints[type].JointType == JointType::JointType_Head) | 
+						(joints[type].JointType == JointType::JointType_Neck)) {
+						continue;// assume face is drawn elsewhere
+					}
 				}
 				colorSpacePoint = { 0 };
 				getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[type].Position, &colorSpacePoint);
 				int x = static_cast<int>(colorSpacePoint.X);
 				int y = static_cast<int>(colorSpacePoint.Y);
-				if ((x >= 0) && (x < getKinect()->width) && (y >= 0) && (y < getKinect()->height)) {
+				if ((x >= 0) && (x < getKinect()->getFrameWidth()) && (y >= 0) && (y < getKinect()->getFrameHeight())) {
 					ofDrawCircle(x, y, 10);
 				}
 			}
@@ -258,6 +266,12 @@ namespace From2552Software {
 			return false;
 		}
 		
+		hResult = pSensor->get_BodyIndexFrameSource(&pBodyIndexSource);
+		if (FAILED(hResult)) {
+			logError(hResult, "get_BodyIndexFrameSource");
+			return false;
+		}
+
 		hResult = pSensor->get_ColorFrameSource(&pColorSource);
 		if (FAILED(hResult)) {
 			logError(hResult, "get_ColorFrameSource");
@@ -267,6 +281,11 @@ namespace From2552Software {
 		hResult = pSensor->get_BodyFrameSource(&pBodySource);
 		if (FAILED(hResult)) {
 			logError(hResult, "get_BodyFrameSource");
+			return false;
+		}
+		hResult = pBodyIndexSource->OpenReader(&pBodyIndexReader);
+		if (FAILED(hResult)) {
+			logError(hResult, "IBodyIndexFrameSource::OpenReader");
 			return false;
 		}
 
@@ -288,10 +307,8 @@ namespace From2552Software {
 			return false;
 		}
 
-		pDescription->get_Width(&width); // 1920
-		pDescription->get_Height(&height); // 1080
-		bufferSize = width * height * 4 * sizeof(unsigned char);
-		//ofSetWindowShape(width, height);
+		pDescription->get_Width(&width);  
+		pDescription->get_Height(&height);  
 
 		hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);
 		if (FAILED(hResult)) {
@@ -821,5 +838,134 @@ int KinectFaces::baseline()
 
 }
 #endif
+void KinectAudio::update() { 
+	getAudioBeam(); 
+}
 
+KinectAudio::KinectAudio(Kinect2552 *pKinect) {
+	Kinect2552BaseClassBodyItems::setup(pKinect);
+	logVerbose("KinectAudio");
+	audioTrackingId = _UI64_MAX - 1; // means none
+	trackingIndex = -1;
+}
+
+KinectAudio::~KinectAudio(){
+	SafeRelease(pAudioSource);
+	SafeRelease(pAudioBeamReader);
+}
+
+void KinectAudio::setup(Kinect2552 *pKinect) {
+	
+	Kinect2552BaseClassBodyItems::setup(pKinect); 
+
+	HRESULT hResult = getKinect()->getSensor()->get_AudioSource(&pAudioSource);
+	if (FAILED(hResult)) {
+		logError(hResult, "get_AudioSource");
+		return;
+	}
+
+	hResult = pAudioSource->OpenReader(&pAudioBeamReader);
+	if (FAILED(hResult)) {
+		logError(hResult, "IAudioSource::OpenReader");
+		return;
+	}
+}
+void KinectAudio::aquireBodyIndexFrame() {
+	// BodyIndex Frame
+	IBodyIndexFrame* pBodyIndexFrame = nullptr;
+	HRESULT hResult = getKinect()->getBodyIndexReader()->AcquireLatestFrame(&pBodyIndexFrame);
+	if (SUCCEEDED(hResult)) {
+		unsigned int bufferSize = 0;
+		unsigned char* buffer = nullptr;
+		hResult = pBodyIndexFrame->AccessUnderlyingBuffer(&bufferSize, &buffer);
+		if (SUCCEEDED(hResult)) {
+			for (int y = 0; y < getKinect()->getFrameHeight(); y++) {
+				for (int x = 0; x < getKinect()->getFrameWidth(); x++) {
+					unsigned int index = y * getKinect()->getFrameWidth() + x;
+					if (buffer[index] == trackingIndex) {
+						//bodyIndexMat.at<cv::Vec3b>(y, x) = color[buffer[index]];
+					}
+					else {
+						//bodyIndexMat.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 0);
+					}
+				}
+			}
+		}
+	}
+	SafeRelease(pBodyIndexFrame);
+}
+void KinectAudio::aquireBodyFrame() {
+	IBodyFrame* pBodyFrame = nullptr;
+	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
+	if (SUCCEEDED(hResult)) {
+		IBody* pBody[BODY_COUNT] = { 0 };
+		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+		if (SUCCEEDED(hResult)) {
+			for (int count = 0; count < BODY_COUNT; count++) {
+				BOOLEAN bTracked = false;
+				hResult = pBody[count]->get_IsTracked(&bTracked);
+				if (SUCCEEDED(hResult) && bTracked) {
+					UINT64 bodyTrackingId = 0;
+					hResult = pBody[count]->get_TrackingId(&bodyTrackingId);
+					if (SUCCEEDED(hResult)) {
+						if (bodyTrackingId == audioTrackingId) {
+							trackingIndex = count;
+						}
+					}
+				}
+			}
+		}
+		for (int count = 0; count < BODY_COUNT; count++) {
+			SafeRelease(pBody[count]);
+		}
+	}
+	SafeRelease(pBodyFrame);
+}
+// AudioBeam Frame
+void KinectAudio::getAudioBeam() {
+
+	IAudioBeamFrameList* pAudioBeamList = nullptr;
+	HRESULT hResult = pAudioBeamReader->AcquireLatestBeamFrames(&pAudioBeamList);
+	if (SUCCEEDED(hResult)) {
+		//get_SubFrameCount
+		UINT count;
+		hResult = pAudioBeamList->get_BeamCount(&count);
+
+		IAudioBeamFrame* pAudioBeamFrame = nullptr;
+		hResult = pAudioBeamList->OpenAudioBeamFrame(0, &pAudioBeamFrame);
+
+		if (SUCCEEDED(hResult)) {
+			IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
+			hResult = pAudioBeamFrame->GetSubFrame(0, &pAudioBeamSubFrame);
+			if (SUCCEEDED(hResult)) {
+				AudioBeamMode audioBeamMode;
+				hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
+				for (int count = 0; count < BODY_COUNT; count++) {
+					IAudioBodyCorrelation *pAudioBodyCorrelation;
+					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(count, &pAudioBodyCorrelation);
+					SafeRelease(pAudioBodyCorrelation);
+				}
+				float beamAngle, beamAngleConfidence;
+				// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
+				hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
+				hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
+				TIMESPAN duration;
+				hResult = pAudioBeamSubFrame->get_Duration(&duration);
+				UINT32 correlationCount = 0;
+				hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
+				if (SUCCEEDED(hResult) && (correlationCount != 0)) {
+					IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
+					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
+					if (SUCCEEDED(hResult)) {
+						hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
+					}
+					SafeRelease(pAudioBodyCorrelation);
+				}
+			}
+			SafeRelease(pAudioBeamSubFrame);
+		}
+		SafeRelease(pAudioBeamFrame);
+	}
+	SafeRelease(pAudioBeamList);
+}
 }
