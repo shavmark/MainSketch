@@ -49,7 +49,7 @@ namespace From2552Software {
 		~Kinect2552();
 
 		bool open();
-		
+
 		IKinectSensor* getSensor() {
 			checkPointer(pSensor, "getSensor");
 			return pSensor;
@@ -72,6 +72,7 @@ namespace From2552Software {
 		}
 		int getFrameWidth() { return width; }
 		int getFrameHeight() { return height; }
+		static const int personCount = BODY_COUNT;
 		void coordinateMapper();
 
 	private:

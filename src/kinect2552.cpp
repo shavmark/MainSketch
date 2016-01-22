@@ -80,8 +80,6 @@ namespace From2552Software {
 		colors.push_back(ofColor(255, 0, 255));
 		colors.push_back(ofColor(255, 255, 255));
 
-
-
 	}
 
 	Kinect2552::~Kinect2552() {
@@ -110,7 +108,7 @@ namespace From2552Software {
 			Kinect2552BaseClassBodyItems::setup(kinectInput); // skip the base class setup, its not needed here
 		}
 
-		for (int i = 0; i < BODY_COUNT; ++i) { 
+		for (int i = 0; i < getKinect()->personCount; ++i) { 
 			KinectBody body(getKinect());
 			bodies.push_back(body);
 		}
@@ -194,11 +192,11 @@ namespace From2552Software {
 		IBodyFrame* pBodyFrame = nullptr;
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
-			IBody* pBody[BODY_COUNT] = { 0 };
+			IBody* pBody[Kinect2552::personCount] = { 0 };
 
-			hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+			hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
 			if (SUCCEEDED(hResult)) {
-				for (int count = 0; count < BODY_COUNT; count++) {
+				for (int count = 0; count < Kinect2552::personCount; count++) {
 					bodies[count].setValid(false);
 					// breaks here
 					BOOLEAN bTracked = false;
@@ -238,7 +236,7 @@ namespace From2552Software {
 					}
 				}
 			}
-			for (int count = 0; count < BODY_COUNT; count++) {
+			for (int count = 0; count < Kinect2552::personCount; count++) {
 				SafeRelease(pBody[count]);
 			}
 		}
@@ -442,7 +440,7 @@ void KinectFaces::setup(Kinect2552 *kinectInput) {
 
 	Kinect2552BaseClassBodyItems::setup(kinectInput);
 
-	for (int i = 0; i < BODY_COUNT; ++i) {
+	for (int i = 0; i < Kinect2552::personCount; ++i) {
 		KinectFace face(getKinect());
 
 		HRESULT hResult = CreateFaceFrameSource(getKinect()->getSensor(), 0, features, &face.pFaceSource);
@@ -589,10 +587,10 @@ void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 	IBodyFrame* pBodyFrame = nullptr;
 	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame); // getKinect()->getBodyReader() was pBodyReader
 	if (SUCCEEDED(hResult)) {
-		IBody* pBody[BODY_COUNT] = { 0 };
-		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+		IBody* pBody[Kinect2552::personCount] = { 0 };
+		hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
 		if (SUCCEEDED(hResult)) {
-			for (int count = 0; count < BODY_COUNT; count++) {
+			for (int count = 0; count < Kinect2552::personCount; count++) {
 				BOOLEAN bTracked = false;
 				hResult = pBody[count]->get_IsTracked(&bTracked);
 				if (SUCCEEDED(hResult) && bTracked) {
@@ -606,7 +604,7 @@ void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 				}
 			}
 		}
-		for (int count = 0; count < BODY_COUNT; count++) {
+		for (int count = 0; count < Kinect2552::personCount; count++) {
 			SafeRelease(pBody[count]);
 		}
 	}
@@ -670,7 +668,7 @@ void KinectFaces::drawProjected(int x, int y, int width, int height) {
 bool KinectFaces::aquireFaceFrame()
 {
 
-	for (int count = 0; count < BODY_COUNT; count++) {
+	for (int count = 0; count < Kinect2552::personCount; count++) {
 		IFaceFrame* pFaceFrame = nullptr;
 		HRESULT hResult = faces[count].getFaceReader()->AcquireLatestFrame(&pFaceFrame); // faces[count].getFaceReader() was pFaceReader[count]
 		if (SUCCEEDED(hResult) && pFaceFrame != nullptr) {
@@ -800,7 +798,7 @@ int KinectFaces::baseline()
 			| FaceFrameFeatures::FaceFrameFeatures_Glasses
 			| FaceFrameFeatures::FaceFrameFeatures_FaceEngagement;
 
-		for (int count = 0; count < BODY_COUNT; count++) {
+		for (int count = 0; count < Kinect2552::personCount; count++) {
 			KinectFace face(getKinect());
 			// Source
 			hResult = CreateFaceFrameSource(pSensor, 0, features, &pFaceSource[count]);
@@ -898,10 +896,10 @@ void KinectAudio::aquireBodyFrame() {
 	IBodyFrame* pBodyFrame = nullptr;
 	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 	if (SUCCEEDED(hResult)) {
-		IBody* pBody[BODY_COUNT] = { 0 };
-		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
+		IBody* pBody[Kinect2552::personCount] = { 0 };
+		hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
 		if (SUCCEEDED(hResult)) {
-			for (int count = 0; count < BODY_COUNT; count++) {
+			for (int count = 0; count < Kinect2552::personCount; count++) {
 				BOOLEAN bTracked = false;
 				hResult = pBody[count]->get_IsTracked(&bTracked);
 				if (SUCCEEDED(hResult) && bTracked) {
@@ -915,7 +913,7 @@ void KinectAudio::aquireBodyFrame() {
 				}
 			}
 		}
-		for (int count = 0; count < BODY_COUNT; count++) {
+		for (int count = 0; count < Kinect2552::personCount; count++) {
 			SafeRelease(pBody[count]);
 		}
 	}
@@ -927,44 +925,51 @@ void KinectAudio::getAudioBeam() {
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = pAudioBeamReader->AcquireLatestBeamFrames(&pAudioBeamList);
 	if (SUCCEEDED(hResult)) {
-		//get_SubFrameCount
-		UINT count;
-		hResult = pAudioBeamList->get_BeamCount(&count);
-
-		IAudioBeamFrame* pAudioBeamFrame = nullptr;
-		hResult = pAudioBeamList->OpenAudioBeamFrame(0, &pAudioBeamFrame);
-
-		if (SUCCEEDED(hResult)) {
-			IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
-			hResult = pAudioBeamFrame->GetSubFrame(0, &pAudioBeamSubFrame);
+		//bugbug add error handling maybe other clean up
+		UINT beamCount=0;
+		hResult = pAudioBeamList->get_BeamCount(&beamCount);
+		// Only one audio beam is currently supported, but write the code in case this changes
+		for (int beam = 0; beam < beamCount; ++beam)	{
+			IAudioBeamFrame* pAudioBeamFrame = nullptr;
+			hResult = pAudioBeamList->OpenAudioBeamFrame(beam, &pAudioBeamFrame);
 			if (SUCCEEDED(hResult)) {
-				AudioBeamMode audioBeamMode;
-				hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
-				for (int count = 0; count < BODY_COUNT; count++) {
-					IAudioBodyCorrelation *pAudioBodyCorrelation;
-					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(count, &pAudioBodyCorrelation);
-					SafeRelease(pAudioBodyCorrelation);
-				}
-				float beamAngle, beamAngleConfidence;
-				// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
-				hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
-				hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
-				TIMESPAN duration;
-				hResult = pAudioBeamSubFrame->get_Duration(&duration);
-				UINT32 correlationCount = 0;
-				hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
-				if (SUCCEEDED(hResult) && (correlationCount != 0)) {
-					IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
-					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
+				UINT32 subFrameCount=0;
+				hResult = pAudioBeamFrame->get_SubFrameCount(&subFrameCount);
+				for (int subframe = 0; subframe < subFrameCount; ++subframe) {
+					IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
+					hResult = pAudioBeamFrame->GetSubFrame(subframe, &pAudioBeamSubFrame);
 					if (SUCCEEDED(hResult)) {
-						hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
+						AudioBeamMode audioBeamMode;
+						hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
+						for (int body = 0; body < Kinect2552::personCount; body++) {
+							IAudioBodyCorrelation *pAudioBodyCorrelation;
+							hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(body, &pAudioBodyCorrelation);
+							SafeRelease(pAudioBodyCorrelation);
+						}
+						float beamAngle, beamAngleConfidence;
+						// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
+						hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
+						hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
+						TIMESPAN duration;
+						hResult = pAudioBeamSubFrame->get_Duration(&duration);
+						UINT32 correlationCount = 0;
+						hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
+						if (SUCCEEDED(hResult) && (correlationCount != 0)) {
+							IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
+							hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
+							if (SUCCEEDED(hResult)) {
+								hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
+							}
+							SafeRelease(pAudioBodyCorrelation);
+						}
 					}
-					SafeRelease(pAudioBodyCorrelation);
+					SafeRelease(pAudioBeamSubFrame);
 				}
 			}
-			SafeRelease(pAudioBeamSubFrame);
+			SafeRelease(pAudioBeamFrame);
+
 		}
-		SafeRelease(pAudioBeamFrame);
+
 	}
 	SafeRelease(pAudioBeamList);
 }
