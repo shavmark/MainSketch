@@ -46,14 +46,14 @@ namespace From2552Software {
 
 #if _DEBUG
 		// used to create direct, simple code for the obscure bugs kinect and openframeworks seem to have
-		pCoordinateMapper = nullptr;
-		pDescription = nullptr;
-		pBodyReader = nullptr;
-		pColorReader = nullptr;
-		pBodySource = nullptr;
-		pColorSource = nullptr;
-		pSensor = nullptr;
-		readfacereaders = false;
+		pCoordinateMapper2 = nullptr;
+		pDescription2 = nullptr;
+		pBodyReader2 = nullptr;
+		pColorReader2 = nullptr;
+		pBodySource2 = nullptr;
+		pColorSource2 = nullptr;
+		pSensor2 = nullptr;
+		readfacereaders2 = false;
 #endif
 	};
 
@@ -724,48 +724,48 @@ int KinectFaces::baseline()
 {
 	// Sensor
 	HRESULT hResult = S_OK;
-	if (false && pSensor == nullptr) // was pSensor
+	if (false && pSensor2 == nullptr) // was pSensor
 	{
-		hResult = GetDefaultKinectSensor(&pSensor);
+		hResult = GetDefaultKinectSensor(&pSensor2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : GetDefaultKinectSensor" << std::endl;
 			return -1;
 		}
 
-		hResult = pSensor->Open();
+		hResult = pSensor2->Open();
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IKinectSensor::Open()" << std::endl;
 			return -1;
 		}
 
 		// Source
-		hResult = pSensor->get_ColorFrameSource(&pColorSource);
+		hResult = pSensor2->get_ColorFrameSource(&pColorSource2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IKinectSensor::get_ColorFrameSource()" << std::endl;
 			return -1;
 		}
 
-		hResult = pSensor->get_BodyFrameSource(&pBodySource);
+		hResult = pSensor2->get_BodyFrameSource(&pBodySource2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IKinectSensor::get_BodyFrameSource()" << std::endl;
 			return -1;
 		}
 
 		// Reader
-		hResult = pColorSource->OpenReader(&pColorReader);
+		hResult = pColorSource2->OpenReader(&pColorReader2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IColorFrameSource::OpenReader()" << std::endl;
 			return -1;
 		}
 
-		hResult = pBodySource->OpenReader(&pBodyReader);
+		hResult = pBodySource2->OpenReader(&pBodyReader2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IBodyFrameSource::OpenReader()" << std::endl;
 			return -1;
 		}
 
 		// Description
-		hResult = pColorSource->get_FrameDescription(&pDescription);
+		hResult = pColorSource2->get_FrameDescription(&pDescription2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IColorFrameSource::get_FrameDescription()" << std::endl;
 			return -1;
@@ -773,13 +773,13 @@ int KinectFaces::baseline()
 
 		int width = 0;
 		int height = 0;
-		pDescription->get_Width(&width); // 1920
-		pDescription->get_Height(&height); // 1080
+		pDescription2->get_Width(&width); // 1920
+		pDescription2->get_Height(&height); // 1080
 		unsigned int bufferSize = width * height * 4 * sizeof(unsigned char);
 
 
 		// Coordinate Mapper
-		hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);
+		hResult = pSensor2->get_CoordinateMapper(&pCoordinateMapper2);
 		if (FAILED(hResult)) {
 			std::cerr << "Error : IKinectSensor::get_CoordinateMapper()" << std::endl;
 			return -1;
@@ -801,14 +801,14 @@ int KinectFaces::baseline()
 		for (int count = 0; count < Kinect2552::personCount; count++) {
 			KinectFace face(getKinect());
 			// Source
-			hResult = CreateFaceFrameSource(pSensor, 0, features, &pFaceSource[count]);
+			hResult = CreateFaceFrameSource(pSensor2, 0, features, &pFaceSource2[count]);
 			if (FAILED(hResult)) {
 				std::cerr << "Error : CreateFaceFrameSource" << std::endl;
 				return -1;
 			}
 
 			// Reader
-			hResult = pFaceSource[count]->OpenReader(&pFaceReader[count]);
+			hResult = pFaceSource2[count]->OpenReader(&pFaceReader2[count]);
 			if (FAILED(hResult)) {
 				std::cerr << "Error : IFaceFrameSource::OpenReader()" << std::endl;
 				return -1;
@@ -837,9 +837,8 @@ int KinectFaces::baseline()
 }
 #endif
 void KinectAudio::update() { 
-	aquireBodyFrame();
+	getAudioBody();
 	getAudioBeam(); 
-	//aquireBodyIndexFrame();
 }
 
 KinectAudio::KinectAudio(Kinect2552 *pKinect) {
@@ -873,39 +872,54 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 		return;
 	}
 }
-void KinectAudio::aquireBodyIndexFrame() {
-	// BodyIndex Frame
-	IBodyIndexFrame* pBodyIndexFrame = nullptr;
-	HRESULT hResult = getKinect()->getBodyIndexReader()->AcquireLatestFrame(&pBodyIndexFrame);
+int KinectAudio::getAudioBody() {
+	UINT32 correlationCount = 0;
+	trackingIndex = 0;
+
+	// AudioBeam Frame
+	IAudioBeamFrameList* pAudioBeamList = nullptr;
+	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);
 	if (SUCCEEDED(hResult)) {
-		unsigned int bufferSize = 0;
-		unsigned char* buffer = nullptr;
-		float* pAudioBuffer = NULL;
-		hResult = pBodyIndexFrame->AccessUnderlyingBuffer(&bufferSize, &buffer);
+		IAudioBeamFrame* pAudioBeamFrame = nullptr;
+		hResult = pAudioBeamList->OpenAudioBeamFrame(0, &pAudioBeamFrame);
 		if (SUCCEEDED(hResult)) {
-			for (int y = 0; y < getKinect()->getFrameHeight(); y++) {
-				for (int x = 0; x < getKinect()->getFrameWidth(); x++) {
-					unsigned int index = y * getKinect()->getFrameWidth() + x;
-					if (buffer[index] == trackingIndex) {
-						//bodyIndexMat.at<cv::Vec3b>(y, x) = color[buffer[index]];
-					}
-					else {
-						//bodyIndexMat.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 0);
+			IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
+			hResult = pAudioBeamFrame->GetSubFrame(0, &pAudioBeamSubFrame);
+			if (SUCCEEDED(hResult)) {
+					
+				hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
+				if (SUCCEEDED(hResult) && (correlationCount != 0)) {
+					IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
+					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
+					if (SUCCEEDED(hResult)) {
+						hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
+						SafeRelease(pAudioBodyCorrelation);
 					}
 				}
+				SafeRelease(pAudioBeamSubFrame);
 			}
+			SafeRelease(pAudioBeamFrame);
+		}
+		SafeRelease(pAudioBeamList);
+	}
+
+	if (correlationCount == 0) {
+		return -1; // no sound + body found, leave the frame out there bugbug mix in with normal frame grabbing
+	}
+
+	// Body Frame
+	IBodyFrame* pBodyFrame = nullptr;
+	while (1) {
+		hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
+		if (hResult != E_PENDING) {
+			break;
 		}
 	}
-	SafeRelease(pBodyIndexFrame);
-}
-void KinectAudio::aquireBodyFrame() {
-	IBodyFrame* pBodyFrame = nullptr;
-	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 	if (SUCCEEDED(hResult)) {
-		IBody* pBody[Kinect2552::personCount] = { 0 };
-		hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
+		IBody* pBody[BODY_COUNT] = { 0 };
+		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
 		if (SUCCEEDED(hResult)) {
-			for (int count = 0; count < Kinect2552::personCount; count++) {
+			for (int count = 0; count < BODY_COUNT; count++) {
 				BOOLEAN bTracked = false;
 				hResult = pBody[count]->get_IsTracked(&bTracked);
 				if (SUCCEEDED(hResult) && bTracked) {
@@ -919,17 +933,23 @@ void KinectAudio::aquireBodyFrame() {
 				}
 			}
 		}
-		for (int count = 0; count < Kinect2552::personCount; count++) {
+		for (int count = 0; count < BODY_COUNT; count++) {
 			SafeRelease(pBody[count]);
 		}
+		SafeRelease(pBodyFrame);
 	}
-	SafeRelease(pBodyFrame);
+	// Draw Text Information
+	if (trackingIndex != (-1)) {
+		std::ostringstream stream;
+	}
+	return trackingIndex;
 }
+
 // AudioBeam Frame https://masteringof.wordpress.com/examples/sounds/ https://masteringof.wordpress.com/projects-based-on-book/
 void KinectAudio::getAudioBeam() {
 
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
-	HRESULT hResult = pAudioBeamReader->AcquireLatestBeamFrames(&pAudioBeamList);
+	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);
 	if (SUCCEEDED(hResult)) {
 		//bugbug add error handling maybe other clean up
 		UINT beamCount = 0;
@@ -955,62 +975,5 @@ void KinectAudio::getAudioBeam() {
 		SafeRelease(pAudioBeamList);
 	}
 
-#if 0
-	UINT32 subFrameCount = 0;
-	hResult = pAudioBeamFrame->get_SubFrameCount(&subFrameCount);
-	for (int subframe = 0; subframe < subFrameCount; ++subframe) {
-		IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
-		hResult = pAudioBeamFrame->GetSubFrame(subframe, &pAudioBeamSubFrame);
-		if (SUCCEEDED(hResult)) {
-			float* pAudioBuffer = NULL;
-			UINT cbRead = 0;
-
-			float fBeamAngle = 0.f;
-			float fBeamAngleConfidence = 0.0f;
-
-			// Get audio beam angle and confidence
-			pAudioBeamSubFrame->get_BeamAngle(&fBeamAngle);
-			pAudioBeamSubFrame->get_BeamAngleConfidence(&fBeamAngleConfidence);
-			if (fBeamAngle > 0) {
-				logVerbose("got one");
-			}
-
-			hResult = pAudioBeamSubFrame->AccessUnderlyingBuffer(&cbRead, (BYTE **)&pAudioBuffer);
-			DWORD nSampleCount = cbRead / sizeof(float);
-
-			// Calculate energy from audio
-			float fAccumulatedSquareSum = 0;
-			for (UINT i = 0; i < nSampleCount; i++) {
-				fAccumulatedSquareSum += pAudioBuffer[i] * pAudioBuffer[i];
-			}
-			AudioBeamMode audioBeamMode;
-			hResult = pAudioBeamSubFrame->get_AudioBeamMode(&audioBeamMode);
-			for (int body = 0; body < Kinect2552::personCount; body++) {
-				IAudioBodyCorrelation *pAudioBodyCorrelation;
-				hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(body, &pAudioBodyCorrelation);
-				if (SUCCEEDED(hResult)) {
-					UINT64 trackingId;
-					pAudioBodyCorrelation->get_BodyTrackingId(&trackingId);
-					SafeRelease(pAudioBodyCorrelation);
-				}
-			}
-			float beamAngle, beamAngleConfidence;
-			// drawing code maybe? http://www.naturalsoftware.jp/entry/2014/08/07/090852
-			hResult = pAudioBeamSubFrame->get_BeamAngle(&beamAngle);
-			hResult = pAudioBeamSubFrame->get_BeamAngleConfidence(&beamAngleConfidence);
-			TIMESPAN duration;
-			hResult = pAudioBeamSubFrame->get_Duration(&duration);
-			UINT32 correlationCount = 0;
-			hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
-			if (SUCCEEDED(hResult) && (correlationCount != 0)) {
-				IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
-				hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
-				if (SUCCEEDED(hResult)) {
-					hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
-				}
-				SafeRelease(pAudioBodyCorrelation);
-			}
-
-#endif // 0
 }
 }

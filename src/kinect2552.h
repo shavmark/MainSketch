@@ -109,16 +109,16 @@ namespace From2552Software {
 #if _DEBUG
 		// here just to support the baseline() function which allows if needed one function to prove out ideas etc
 		// normally these items would be the Kinect2552 class
-		ICoordinateMapper* pCoordinateMapper;
-		IFrameDescription* pDescription;
-		IBodyFrameReader* pBodyReader;
-		IColorFrameReader* pColorReader;
-		IBodyFrameSource* pBodySource;
-		IColorFrameSource* pColorSource;
-		IKinectSensor* pSensor;
-		IFaceFrameReader* pFaceReader[BODY_COUNT];
-		IFaceFrameSource* pFaceSource[BODY_COUNT];
-		bool readfacereaders;
+		ICoordinateMapper* pCoordinateMapper2;
+		IFrameDescription* pDescription2;
+		IBodyFrameReader* pBodyReader2;
+		IColorFrameReader* pColorReader2;
+		IBodyFrameSource* pBodySource2;
+		IColorFrameSource* pColorSource2;
+		IKinectSensor* pSensor2;
+		IFaceFrameReader* pFaceReader2[BODY_COUNT];
+		IFaceFrameSource* pFaceSource2[BODY_COUNT];
+		bool readfacereaders2;
 #endif
 
 	protected:
@@ -231,7 +231,7 @@ namespace From2552Software {
 
 	protected:
 		void getAudioBeam();
-		void aquireBodyFrame();
+		int getAudioBody();
 		void aquireBodyIndexFrame();
 		IAudioSource*		   pAudioSource;
 		IAudioBeamFrameReader* pAudioBeamReader;
