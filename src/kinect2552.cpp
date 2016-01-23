@@ -2,6 +2,13 @@
 
 namespace From2552Software {
 
+	KinectBody::KinectBody(Kinect2552 *pKinect) {
+		logVerbose("KinectBody");
+		Kinect2552BaseClassBodyItems::setup(pKinect);
+		leftHandState = HandState::HandState_Unknown;
+		rightHandState = HandState::HandState_Unknown;
+		setTalking(false);
+	}
 
 	bool Kinect2552BaseClass::checkPointer(IUnknown *p, string message) {
 		logVerbose(message); // should give some good trace
@@ -161,6 +168,7 @@ namespace From2552Software {
 				}
 			}
 			// Joint
+			ColorSpacePoint talkbubble;
 			for (int type = 0; type < JointType::JointType_Count; type++) {
 				if (!drawface) {
 					if ((joints[type].JointType == JointType::JointType_Head) | 
@@ -175,7 +183,15 @@ namespace From2552Software {
 				if ((x >= 0) && (x < getKinect()->getFrameWidth()) && (y >= 0) && (y < getKinect()->getFrameHeight())) {
 					ofDrawCircle(x, y, 10);
 				}
+
+				if (joints[type].JointType == JointType::JointType_ShoulderRight) {
+					if (isTalking()){
+						ofDrawCircle(colorSpacePoint.X, colorSpacePoint.Y, 100);
+					}
+				}
+				
 			}
+
 		}
 
 	}
@@ -192,11 +208,13 @@ namespace From2552Software {
 	}
 
 	void KinectBodies::update() {
-
 		IBodyFrame* pBodyFrame = nullptr;
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
 			IBody* pBody[Kinect2552::personCount] = { 0 };
+			for (int count = 0; count < Kinect2552::personCount; count++) {
+				bodies[count].setTalking(false);
+			}
 
 			hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
 			if (SUCCEEDED(hResult)) {
@@ -216,32 +234,33 @@ namespace From2552Software {
 						}
 
 						setTrackingID(count, trackingId); //bugbug if this fails should we just set an error and return?
-							
+
 						if (usingAudio()) {
 							// see if any audio there
 							audio.getAudioCorrelation();
 							if (audio.getTrackingID() == trackingId) {
 								audio.setValid(); 
+								bodies[count].setTalking(true);
 							}
 						}
 
 						// get joints
-						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].joints);
+						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].getJoints());
 						if (SUCCEEDED(hResult)) {
 							// Left Hand State
-							hResult = pBody[count]->get_HandLeftState(&bodies[count].leftHandState);
+							hResult = pBody[count]->get_HandLeftState(bodies[count].leftHand());
 							if (FAILED(hResult)) {
 								logError(hResult, "get_HandLeftState");
 								return;
 							}
 							// Right Hand State
-							hResult = pBody[count]->get_HandRightState(&bodies[count].rightHandState);
+							hResult = pBody[count]->get_HandRightState(bodies[count].rightHand());
 							if (FAILED(hResult)) {
 								logError(hResult, "get_HandRightState");
 								return;
 							}
 							// Lean
-							hResult = pBody[count]->get_Lean(&bodies[count].leanAmount);
+							hResult = pBody[count]->get_Lean(bodies[count].lean());
 							if (FAILED(hResult)) {
 								logError(hResult, "get_HandRightState");
 								return;

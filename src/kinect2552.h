@@ -132,19 +132,21 @@ namespace From2552Software {
 
 	class KinectBody : public Kinect2552BaseClassBodyItems {
 	public:
-		KinectBody(Kinect2552 *pKinect = nullptr) {
-			Kinect2552BaseClassBodyItems::setup(pKinect);
-			leftHandState = HandState::HandState_Unknown;
-			rightHandState = HandState::HandState_Unknown;
-			logVerbose("KinectBody");
-		}
+		KinectBody(Kinect2552 *pKinect = nullptr);
 		void draw(bool drawface=true);
-		friend class KinectBodies;
+		bool isTalking() {return talking;}
+		void setTalking(bool b = true) { talking = b; };
+		Joint* getJoints() { return joints; }
+		HandState* leftHand() { return &leftHandState; };
+		HandState* rightHand() { return &rightHandState; };
+		PointF *lean() { return &leanAmount; }
+
 	private:
 		Joint joints[JointType::JointType_Count];
 		HandState leftHandState;
 		HandState rightHandState;
 		PointF leanAmount;
+		bool talking; // person is talking
 	};
 
 	
