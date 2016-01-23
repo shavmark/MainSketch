@@ -2,6 +2,10 @@
 #include "ofMain.h"
 #include "ole2.h"
 
+// For M_PI and log definitions
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 namespace From2552Software {
 	class BaseClass2552 {
 	public:
