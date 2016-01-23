@@ -72,8 +72,10 @@ namespace From2552Software {
 	}
 
 	bool KinectBody::isTalking() {
-		--talking;  
-		return talking > 0; 
+		if (talking > 0) {
+			--talking;
+		}
+		return talking > 0;
 	}
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
 
@@ -138,26 +140,29 @@ namespace From2552Software {
 			}
 			// Joint
 			for (int type = 0; type < JointType::JointType_Count; type++) {
+				colorSpacePoint = { 0 };
+				getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[type].Position, &colorSpacePoint);
+				int x = static_cast<int>(colorSpacePoint.X);
+				int y = static_cast<int>(colorSpacePoint.Y);
+
+				if (joints[type].JointType == JointType::JointType_Head) {
+					if (isTalking()) {
+						//bugbug todo go to this to get better 3d projection CameraSpacePoint
+						ofDrawLine(colorSpacePoint.X+2, colorSpacePoint.Y-5, colorSpacePoint.X + 40, colorSpacePoint.Y-5);
+						ofDrawLine(colorSpacePoint.X + 5, colorSpacePoint.Y, colorSpacePoint.X + 45, colorSpacePoint.Y);
+						ofDrawLine(colorSpacePoint.X+2, colorSpacePoint.Y +5, colorSpacePoint.X + 40, colorSpacePoint.Y + 5);
+					}
+				}
 				if (!drawface) {
 					if ((joints[type].JointType == JointType::JointType_Head) | 
 						(joints[type].JointType == JointType::JointType_Neck)) {
 						continue;// assume face is drawn elsewhere
 					}
 				}
-				colorSpacePoint = { 0 };
-				getKinect()->getCoordinateMapper()->MapCameraPointToColorSpace(joints[type].Position, &colorSpacePoint);
-				int x = static_cast<int>(colorSpacePoint.X);
-				int y = static_cast<int>(colorSpacePoint.Y);
 				if ((x >= 0) && (x < getKinect()->getFrameWidth()) && (y >= 0) && (y < getKinect()->getFrameHeight())) {
 					ofDrawCircle(x, y, 10);
 				}
 
-				if (joints[type].JointType == JointType::JointType_ShoulderRight) {
-					if (isTalking()){
-						ofDrawCircle(colorSpacePoint.X, colorSpacePoint.Y, 100);
-					}
-				}
-				
 			}
 
 		}
@@ -206,6 +211,7 @@ namespace From2552Software {
 							audio.getAudioCorrelation();
 							if (audio.getTrackingID() == trackingId) {
 								audio.setValid(); 
+								logTrace("set talking");
 								bodies[count].setTalking();
 							}
 						}
@@ -845,8 +851,8 @@ void KinectAudio::update() {
 KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	Kinect2552BaseClassBodyItems::setup(pKinect);
 	logVerbose("KinectAudio");
-	audioTrackingId = _UI64_MAX - 1; // means none
-	trackingIndex = -1;
+	audioTrackingId = NoTrackingID;
+	trackingIndex = NoTrackingIndex;
 	angle = 0.0f;
 	confidence = 0.0f;
 	correlationCount = 0;
@@ -890,7 +896,8 @@ void KinectAudio::getAudioBody() {
 }
 void KinectAudio::getAudioCorrelation() {
 	correlationCount = 0;
-	trackingIndex = 0;
+	trackingIndex = NoTrackingIndex;
+	audioTrackingId = NoTrackingID;
 
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);

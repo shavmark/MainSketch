@@ -110,7 +110,7 @@ namespace From2552Software {
 		KinectBody(Kinect2552 *pKinect = nullptr);
 		void draw(bool drawface=true);
 		bool isTalking();
-		void setTalking(int count = 5);
+		void setTalking(int count = 2); // let it linger just a bit
 		Joint* getJoints() { return joints; }
 		HandState* leftHand() { return &leftHandState; };
 		HandState* rightHand() { return &rightHandState; };
@@ -189,6 +189,9 @@ namespace From2552Software {
 	public:
 		KinectAudio(Kinect2552 *pKinect = nullptr);
 		~KinectAudio();
+
+		const UINT64 NoTrackingID = _UI64_MAX - 1;
+		const UINT64 NoTrackingIndex = -1;
 
 		void setup(Kinect2552 *pKinect);
 		void update();
