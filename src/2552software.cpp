@@ -53,7 +53,7 @@ namespace From2552Software {
 
 		HRESULT hr = CoCreateInstance(CLSID_SpVoice, NULL, CLSCTX_ALL, IID_ISpVoice, (void     **)&pVoice);
 		if (SUCCEEDED(hr)) {
-			hr = SpEnumTokens(SPCAT_VOICES, NULL, NULL, &pEnum);
+			hr = SpEnumTokens(SPCAT_VOICES, L"Gender=Female", NULL, &pEnum);
 			if (SUCCEEDED(hr))
 			{
 				// Get the number of voices.
