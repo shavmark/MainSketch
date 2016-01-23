@@ -108,6 +108,10 @@ namespace From2552Software {
 			Kinect2552BaseClassBodyItems::setup(kinectInput); // skip the base class setup, its not needed here
 		}
 
+		if (usingAudio()) {
+			audio.setup(kinectInput);
+		}
+
 		for (int i = 0; i < getKinect()->personCount; ++i) { 
 			KinectBody body(getKinect());
 			bodies.push_back(body);
@@ -206,10 +210,21 @@ namespace From2552Software {
 						// LEFT OFF HERE
 						UINT64 trackingId = _UI64_MAX;
 						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (SUCCEEDED(hResult)) {
-							setTrackingID(count, trackingId);
+						if (FAILED(hResult)) {
+							logError(hResult, "get_TrackingId");
+							return;
 						}
+
+						setTrackingID(count, trackingId); //bugbug if this fails should we just set an error and return?
 							
+						if (usingAudio()) {
+							// see if any audio there
+							audio.getAudioCorrelation();
+							if (audio.getTrackingID() == trackingId) {
+								audio.setValid(); 
+							}
+						}
+
 						// get joints
 						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].joints);
 						if (SUCCEEDED(hResult)) {
@@ -607,8 +622,9 @@ void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 		for (int count = 0; count < Kinect2552::personCount; count++) {
 			SafeRelease(pBody[count]);
 		}
+		SafeRelease(pBodyFrame);
 	}
-	SafeRelease(pBodyFrame);
+
 }
 // add faces to the bodies
 void KinectFaces::update() {
@@ -848,7 +864,7 @@ KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	trackingIndex = -1;
 	angle = 0.0f;
 	confidence = 0.0f;
-
+	correlationCount = 0;
 }
 
 KinectAudio::~KinectAudio(){
@@ -872,11 +888,25 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 		return;
 	}
 }
-int KinectAudio::getAudioBody() {
-	UINT32 correlationCount = 0;
+void  KinectAudio::setTrackingID(int index, UINT64 trackingId) {
+	logVerbose("KinectAudio::setTrackingID");
+
+	if (trackingId == audioTrackingId) {
+		trackingIndex = index;
+		logTrace("set tracking id");
+	}
+}
+// poll kenict to get audo and the body it came from
+void KinectAudio::getAudioBody() {
+	getAudioCorrelation();
+	if (correlationCount != 0) {
+		aquireBodyFrame();
+	}
+}
+void KinectAudio::getAudioCorrelation() {
+	correlationCount = 0;
 	trackingIndex = 0;
 
-	// AudioBeam Frame
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);
 	if (SUCCEEDED(hResult)) {
@@ -886,7 +916,6 @@ int KinectAudio::getAudioBody() {
 			IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
 			hResult = pAudioBeamFrame->GetSubFrame(0, &pAudioBeamSubFrame);
 			if (SUCCEEDED(hResult)) {
-					
 				hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
 				if (SUCCEEDED(hResult) && (correlationCount != 0)) {
 					IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
@@ -903,46 +932,6 @@ int KinectAudio::getAudioBody() {
 		SafeRelease(pAudioBeamList);
 	}
 
-	if (correlationCount == 0) {
-		return -1; // no sound + body found, leave the frame out there bugbug mix in with normal frame grabbing
-	}
-
-	// Body Frame
-	IBodyFrame* pBodyFrame = nullptr;
-	while (1) {
-		hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
-		if (hResult != E_PENDING) {
-			break;
-		}
-	}
-	if (SUCCEEDED(hResult)) {
-		IBody* pBody[BODY_COUNT] = { 0 };
-		hResult = pBodyFrame->GetAndRefreshBodyData(BODY_COUNT, pBody);
-		if (SUCCEEDED(hResult)) {
-			for (int count = 0; count < BODY_COUNT; count++) {
-				BOOLEAN bTracked = false;
-				hResult = pBody[count]->get_IsTracked(&bTracked);
-				if (SUCCEEDED(hResult) && bTracked) {
-					UINT64 bodyTrackingId = 0;
-					hResult = pBody[count]->get_TrackingId(&bodyTrackingId);
-					if (SUCCEEDED(hResult)) {
-						if (bodyTrackingId == audioTrackingId) {
-							trackingIndex = count;
-						}
-					}
-				}
-			}
-		}
-		for (int count = 0; count < BODY_COUNT; count++) {
-			SafeRelease(pBody[count]);
-		}
-		SafeRelease(pBodyFrame);
-	}
-	// Draw Text Information
-	if (trackingIndex != (-1)) {
-		std::ostringstream stream;
-	}
-	return trackingIndex;
 }
 
 // AudioBeam Frame https://masteringof.wordpress.com/examples/sounds/ https://masteringof.wordpress.com/projects-based-on-book/

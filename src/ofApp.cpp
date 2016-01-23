@@ -17,11 +17,11 @@ void ofApp::setup(){
 	ofFill();
 
 	myKinect.open();
-	audio.setup(&myKinect);
+	//audio.setup(&myKinect);
 	
 	//faces.setup(&myKinect);
 	//bodies.useFaces();
-	//bodies.setup(&myKinect);
+	bodies.setup(&myKinect);
 
 	ofSetWindowShape(640 * 2, 480 * 2);
 }
@@ -30,8 +30,8 @@ void ofApp::setup(){
 void ofApp::update(){
 	//faces.baseline(); //use to debug, can do what ever needed to get things to work, to create a working base line
 	//faces.update();
-	//bodies.update();
-	audio.update();
+	bodies.update();
+	//audio.update();
 
 #if sample	
 	//--

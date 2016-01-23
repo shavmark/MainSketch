@@ -228,34 +228,44 @@ namespace From2552Software {
 		bool confident() { return  getConfidence() > 0.5f; }
 		float getAngle() { return angle; }
 		float getConfidence() { return confidence; }
+		void getAudioBeam();
+		void getAudioBody();
+		void getAudioCorrelation();
+		int  getTrackingBodyIndex() {return trackingIndex;}
+		UINT64 getTrackingID() { return audioTrackingId; }
 
 	protected:
-		void getAudioBeam();
-		int getAudioBody();
-		void aquireBodyIndexFrame();
+		virtual void setTrackingID(int index, UINT64 trackingId);
 		IAudioSource*		   pAudioSource;
 		IAudioBeamFrameReader* pAudioBeamReader;
 		UINT64 audioTrackingId;
 		int trackingIndex;
 		float angle;
 		float confidence;
+		UINT32 correlationCount;
 
 	};
 
 	class KinectBodies : public KinectFaces {
 	public:
-		KinectBodies(bool usefaces = false) : KinectFaces(){ useFaces(usefaces); }
+		KinectBodies() : KinectFaces() { useFaces(); useAudio(); }
 		void update();
 		void draw();
 		void setup(Kinect2552 *kinectInput);
 
 		void useFaces(bool usefaces = true)  { includeFaces = usefaces; }
 		bool usingFaces() { return includeFaces; }
+
+		void useAudio(bool useaudio = true) { includeAudio = useaudio; }
+		bool usingAudio() { return includeAudio; }
+
 	private:
 		bool includeFaces;
+		bool includeAudio;
 		void setTrackingID(int index, UINT64 trackingId) {
 			if (usingFaces()) { faces[index].getFaceSource()->put_TrackingId(trackingId); };
 		}
 		vector<KinectBody> bodies;
+		KinectAudio audio;
 	};
 }
