@@ -12,6 +12,9 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	
+	ofSetFrameRate(60);
+	ofSetLogLevel(OF_LOG_VERBOSE);
+
 	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
 	ofBackground(0);
 	ofFill();

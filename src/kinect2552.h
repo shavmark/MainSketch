@@ -2,7 +2,7 @@
 #define Foundation_UnWindows_INCLUDED
 #include "ofMain.h"
 #include "Kinect.Face.h"
-
+#include "2552software.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -15,33 +15,8 @@
 namespace From2552Software {
 
 	//base class for things like faces
-	class Kinect2552BaseClass {
+	class Kinect2552BaseClass : public BaseClass2552 {
 	public:
-		Kinect2552BaseClass() { valid = false; }
-		
-		bool objectValid() { return valid; } // data is in a good state
-		void setValid(bool b = true) { valid = b; };
-
-		bool checkPointer(IUnknown *p, string message);
-		bool checkPointer(Kinect2552BaseClass *p, string message);
-		void logError(string error);
-		void logVerbose(string message) { logTrace(message, OF_LOG_VERBOSE); }; // promote trace, make it obvious and easy
-		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE);
-		void logError(HRESULT hResult, string message = "");
-
-		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
-		{
-			if (pInterfaceToRelease != NULL) {
-				pInterfaceToRelease->Release();
-				pInterfaceToRelease = NULL;
-			}
-		}
-
-	private:
-		bool valid; // true when data is valid
-
-
-
 	};
 	
 	class Kinect2552 : public Kinect2552BaseClass {
@@ -134,8 +109,8 @@ namespace From2552Software {
 	public:
 		KinectBody(Kinect2552 *pKinect = nullptr);
 		void draw(bool drawface=true);
-		bool isTalking() {return talking;}
-		void setTalking(bool b = true) { talking = b; };
+		bool isTalking();
+		void setTalking(int count = 5);
 		Joint* getJoints() { return joints; }
 		HandState* leftHand() { return &leftHandState; };
 		HandState* rightHand() { return &rightHandState; };
@@ -146,7 +121,7 @@ namespace From2552Software {
 		HandState leftHandState;
 		HandState rightHandState;
 		PointF leanAmount;
-		bool talking; // person is talking
+		int talking; // person is talking, this is a count down bool, each check reduces the count so things can disappear over time
 	};
 
 	

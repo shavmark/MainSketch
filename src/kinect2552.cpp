@@ -10,44 +10,6 @@ namespace From2552Software {
 		setTalking(false);
 	}
 
-	bool Kinect2552BaseClass::checkPointer(IUnknown *p, string message) {
-		logVerbose(message); // should give some good trace
-		if (p == nullptr) {
-			logError("in valid pointer " + message);
-			return false;
-		}
-		return true;
-	}
-	bool Kinect2552BaseClass::checkPointer(Kinect2552BaseClass *p, string message) {
-		logVerbose(message); // should give some good trace
-		if (p == nullptr) {
-			logError("in valid pointer " + message);
-			return false;
-		}
-		return true;
-	}
-
-	void Kinect2552BaseClass::logError(string errorIn) {
-		string error = "Error " + errorIn + " ";
-		error += __FILE__;
-		error += ": " + __LINE__;
-		ofLog(OF_LOG_FATAL_ERROR, error);
-	}
-	void Kinect2552BaseClass::logError(HRESULT hResult, string message) {
-		
-		std::ostringstream stringStream;
-		stringStream << message;
-		stringStream << ":  ";
-		stringStream << std::hex << hResult; //todo example this to text bugbug
-
-		logError(stringStream.str());
-
-	}
-
-	void Kinect2552BaseClass::logTrace(string message, ofLogLevel level) {
-		ofLog(level, message);
-	}
-
 	void Kinect2552BaseClassBodyItems::setup(Kinect2552 *pKinectIn) {
 		pKinect = pKinectIn;
 
@@ -105,7 +67,14 @@ namespace From2552Software {
 		SafeRelease(pBodyIndexSource);
 		SafeRelease(pBodyIndexReader);
 	}
+	void KinectBody::setTalking(int count) { 
+		talking = count; 
+	}
 
+	bool KinectBody::isTalking() {
+		--talking;  
+		return talking > 0; 
+	}
 	void KinectBodies::setup(Kinect2552 *kinectInput) {
 
 		if (usingFaces()) {
@@ -168,7 +137,6 @@ namespace From2552Software {
 				}
 			}
 			// Joint
-			ColorSpacePoint talkbubble;
 			for (int type = 0; type < JointType::JointType_Count; type++) {
 				if (!drawface) {
 					if ((joints[type].JointType == JointType::JointType_Head) | 
@@ -212,13 +180,11 @@ namespace From2552Software {
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
 		if (SUCCEEDED(hResult)) {
 			IBody* pBody[Kinect2552::personCount] = { 0 };
-			for (int count = 0; count < Kinect2552::personCount; count++) {
-				bodies[count].setTalking(false);
-			}
 
 			hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
 			if (SUCCEEDED(hResult)) {
 				for (int count = 0; count < Kinect2552::personCount; count++) {
+					bodies[count].setTalking(0);
 					bodies[count].setValid(false);
 					// breaks here
 					BOOLEAN bTracked = false;
@@ -240,7 +206,7 @@ namespace From2552Software {
 							audio.getAudioCorrelation();
 							if (audio.getTrackingID() == trackingId) {
 								audio.setValid(); 
-								bodies[count].setTalking(true);
+								bodies[count].setTalking();
 							}
 						}
 
