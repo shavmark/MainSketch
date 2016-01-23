@@ -1,10 +1,17 @@
 #pragma once
-#include "ofMain.h"
-#include "ole2.h"
-
 // For M_PI and log definitions
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <iostream>
+
+
+// Microsoft Speech Platform SDK 11
+#include <sapi.h>
+#include <sphelper.h> // SpFindBestToken()
+#include <strsafe.h>
+#include <intsafe.h>
+#include "ofMain.h"
+#include "ole2.h"
 
 namespace From2552Software {
 	class BaseClass2552 {
@@ -32,6 +39,11 @@ namespace From2552Software {
 	private:
 		bool valid; // true when data is valid
 
+	};
+
+	class Sound {
+	public:
+		void test();
 	};
 }
 

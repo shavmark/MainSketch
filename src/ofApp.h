@@ -1,4 +1,6 @@
 #pragma once
+#include <sapi.h>  
+#include <sphelper.h> 
 #include "ofMain.h"
 
 #include "kinect2552.h"

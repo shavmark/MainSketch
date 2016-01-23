@@ -1,6 +1,6 @@
 #include "ofApp.h"
 #include "utils.h"
-
+#include "2552software.h"
 // follow this https://github.com/openframeworks/openFrameworks/wiki/oF-code-style, but let them w/o bugs cast the first flames
 
 //http://openframeworks.cc/ofBook/chapters/c++11.html\
@@ -14,6 +14,8 @@ void ofApp::setup(){
 	
 	ofSetFrameRate(60);
 	//ofSetLogLevel(OF_LOG_VERBOSE);
+	From2552Software::Sound sound;
+	sound.test();
 
 	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
 	ofBackground(0);
