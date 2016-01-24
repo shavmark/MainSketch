@@ -12,7 +12,7 @@
 namespace From2552Software {
 
 	//base class for things like faces
-	class Kinect2552BaseClass : public BaseClass2552 {
+	class Kinect2552BaseClass : public BaseClass2552WithDrawing {
 	public:
 	};
 	

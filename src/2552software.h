@@ -14,12 +14,9 @@
 #include "ole2.h"
 
 namespace From2552Software {
+	// root class, basic and small but items every object needs.  Try to avoid adding data to keep it small
 	class BaseClass2552 {
 	public:
-		BaseClass2552() { valid = false; }
-
-		bool objectValid() { return valid; } // data is in a good state
-		void setValid(bool b = true) { valid = b; };
 
 		bool checkPointer(IUnknown *p, string message);
 		bool checkPointer(BaseClass2552 *p, string message);
@@ -37,8 +34,20 @@ namespace From2552Software {
 		}
 
 	private:
-		bool valid; // true when data is valid
+	
 
+	};
+
+	// drawing related items start here
+	class BaseClass2552WithDrawing: public BaseClass2552 {
+	public: 
+		BaseClass2552WithDrawing() { valid = false; }
+
+		bool objectValid() { return valid; } // data is in a good state
+		void setValid(bool b = true) { valid = b; };
+
+	private:
+		bool valid; // true when data is valid and ready to draw
 	};
 
 	class Sound {
