@@ -213,6 +213,11 @@ namespace From2552Software {
 
 	protected:
 		virtual void setTrackingID(int index, UINT64 trackingId);
+		HRESULT createSpeechRecognizer();
+		HRESULT startSpeechRecognition();
+		HRESULT findKinect();
+		HRESULT setupSpeachStream();
+
 		IAudioSource*		   pAudioSource;
 		IAudioBeamFrameReader* pAudioBeamReader;
 		IAudioBeamList* pAudioBeamList;
@@ -220,7 +225,6 @@ namespace From2552Software {
 		IStream* pAudioStream;
 		ISpStream* pSpeechStream;
 		ISpRecognizer* pSpeechRecognizer;
-		ISpObjectToken* pEngineToken;
 		ISpRecoContext* pSpeechContext;
 		ISpRecoGrammar* pSpeechGrammar;
 		HANDLE hSpeechEvent;

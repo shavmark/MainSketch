@@ -847,7 +847,7 @@ void KinectAudio::update() {
 	getAudioBody();
 	getAudioBeam(); 
 }
-
+//http://www.buildinsider.net/small/kinectv2cpp/07
 KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	Kinect2552BaseClassBodyItems::setup(pKinect);
 	logVerbose("KinectAudio");
@@ -863,7 +863,6 @@ KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	pAudioBeamReader = nullptr;
 	pSpeechStream = nullptr;
 	pSpeechRecognizer = nullptr;
-	pEngineToken = nullptr;
 	pSpeechContext = nullptr;
 	pSpeechGrammar = nullptr;
 	hSpeechEvent = INVALID_HANDLE_VALUE;
@@ -878,7 +877,6 @@ KinectAudio::~KinectAudio(){
 	SafeRelease(pAudioStream);
 	SafeRelease(pSpeechStream); 
 	SafeRelease(pSpeechRecognizer);
-	SafeRelease(pEngineToken);
 	SafeRelease(pSpeechContext);
 	SafeRelease(pSpeechGrammar);
 	if (hSpeechEvent != INVALID_HANDLE_VALUE) {
@@ -927,111 +925,19 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 		return;
 	}
 
-	// Create Speech Stream Instance
-	
-	hResult = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&pSpeechStream);
-	if (FAILED(hResult)) {
-		logError(hResult, " CoCreateInstance( CLSID_SpStream )");
+	if (FAILED(setupSpeachStream())) {
+		return;
+	}
+	if (FAILED(createSpeechRecognizer())) {
+		return;
+	}
+	if (FAILED(findKinect())) {
+		return;
+	}
+	if (FAILED(startSpeechRecognition())) {
 		return;
 	}
 
-	// Initialize Speech Stream
-	WORD AudioFormat = WAVE_FORMAT_PCM;
-	WORD AudioChannels = 1;
-	DWORD AudioSamplesPerSecond = 16000;
-	DWORD AudioAverageBytesPerSecond = 32000;
-	WORD AudioBlockAlign = 2;
-	WORD AudioBitsPerSample = 16;
-
-	WAVEFORMATEX waveFormat = { AudioFormat, AudioChannels, AudioSamplesPerSecond, AudioAverageBytesPerSecond, AudioBlockAlign, AudioBitsPerSample, 0 };
-
-	//pAudioStream->SetSpeechState(true);
-	hResult = pSpeechStream->SetBaseStream(pAudioStream, SPDFID_WaveFormatEx, &waveFormat);
-	if (FAILED(hResult)) {
-		logError(hResult, " ISpStream::SetBaseStream");
-		return;
-	}
-
-	hResult = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpRecognizer), (void**)&pSpeechRecognizer);
-	if (FAILED(hResult)) {
-		logError(hResult, "CoCreateInstance CLSID_SpInprocRecognizer");
-		return;
-	}
-
-	hResult = pSpeechRecognizer->SetInput(pSpeechStream, TRUE);
-	if (FAILED(hResult)) {
-		logError(hResult, "ISpRecognizer::SetInput");
-		return;
-	}
-
-	hResult = SpFindBestToken( SPCAT_RECOGNIZERS, L"Language=409;Kinect=True", NULL, &pEngineToken );
-	if (FAILED(hResult)) {
-		logError(hResult, "SpFindBestToken");
-		return;
-	}
-
-	// Set Speech Recognizer
-	hResult = pSpeechRecognizer->SetRecognizer(pEngineToken);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetRecognizer");
-		return;
-	}
-
-	// Create Context
-	hResult = pSpeechRecognizer->CreateRecoContext(&pSpeechContext);
-	if (FAILED(hResult)) {
-		logError(hResult, "CreateRecoContext");
-		return;
-	}
-
-	hResult = pSpeechRecognizer->SetPropertyNum(L"AdaptationOn", 0);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetPropertyNum");
-		return;
-	}
-
-	hResult = pSpeechContext->CreateGrammar(1, &pSpeechGrammar);
-	if (FAILED(hResult)) {
-		logError(hResult, "CreateGrammar");
-		return;
-	}
-
-	hResult = pSpeechGrammar->LoadCmdFromFile(L"grammar.grxml", SPLO_STATIC); // http://www.w3.org/TR/speech-grammar/ (UTF-8/CRLF)
-	if (FAILED(hResult)) {
-		logError(hResult, "LoadCmdFromFile grammar.grxml");
-		return;
-	}
-
-	hResult = pSpeechGrammar->SetRuleState(NULL, NULL, SPRS_ACTIVE);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetRuleState");
-		return;
-	}
-
-	hResult = pSpeechRecognizer->SetRecoState(SPRST_ACTIVE_ALWAYS);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetRecoState");
-		return;
-	}
-
-	hResult = pSpeechContext->SetInterest(SPFEI(SPEI_RECOGNITION), SPFEI(SPEI_RECOGNITION));
-	if (FAILED(hResult)) {
-		logError(hResult, "SetInterest");
-		return;
-	}
-
-	hResult = pSpeechContext->Resume(0);
-	if (FAILED(hResult)) {
-		logError(hResult, "Resume");
-		return;
-	}
-	hResult = pSpeechContext->SetNotifyWin32Event(); // needed?
-	if (FAILED(hResult)) {
-		logError(hResult, "SetNotifyWin32Event");
-		return;
-	}
-	hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
-	hEvents[0] = hSpeechEvent;
 	bool exit = false;
 	while (1) {
 		// Waitable Events
@@ -1095,6 +1001,156 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 	pSpeechRecognizer->SetRecoState(SPRST_INACTIVE_WITH_PURGE);
 }
 
+HRESULT KinectAudio::setupSpeachStream() {
+
+	HRESULT hResult = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&pSpeechStream);
+	if (FAILED(hResult)) {
+		logError(hResult, " CoCreateInstance( CLSID_SpStream )");
+		return hResult;
+	}
+
+	WORD AudioFormat = WAVE_FORMAT_PCM;
+	WORD AudioChannels = 1;
+	DWORD AudioSamplesPerSecond = 16000;
+	DWORD AudioAverageBytesPerSecond = 32000;
+	WORD AudioBlockAlign = 2;
+	WORD AudioBitsPerSample = 16;
+
+	WAVEFORMATEX waveFormat = { AudioFormat, AudioChannels, AudioSamplesPerSecond, AudioAverageBytesPerSecond, AudioBlockAlign, AudioBitsPerSample, 0 };
+
+	//pAudioStream->SetSpeechState(true);
+	hResult = pSpeechStream->SetBaseStream(pAudioStream, SPDFID_WaveFormatEx, &waveFormat);
+	if (FAILED(hResult)) {
+		logError(hResult, " ISpStream::SetBaseStream");
+		return hResult;
+	}
+
+	return hResult;
+
+}
+HRESULT KinectAudio::findKinect() {
+
+	ISpObjectTokenCategory* pTokenCategory = nullptr;
+	HRESULT hResult = CoCreateInstance(CLSID_SpObjectTokenCategory, nullptr, CLSCTX_ALL, __uuidof(ISpObjectTokenCategory), reinterpret_cast<void**>(&pTokenCategory));
+	if (FAILED(hResult)) {
+		logError(hResult, "CoCreateInstance( CLSID_SpObjectTokenCategory )");
+		return hResult;
+	}
+
+	hResult = pTokenCategory->SetId(SPCAT_RECOGNIZERS, false);
+	if (FAILED(hResult)) {
+		logError(hResult, "ISpObjectTokenCategory::SetId()");
+		SafeRelease(pTokenCategory);
+		return hResult;
+	}
+
+	IEnumSpObjectTokens* pEnumTokens = nullptr;
+	hResult = CoCreateInstance(CLSID_SpMMAudioEnum, nullptr, CLSCTX_ALL, __uuidof(IEnumSpObjectTokens), reinterpret_cast<void**>(&pEnumTokens));
+	if (FAILED(hResult)) {
+		logError(hResult, "CoCreateInstance( CLSID_SpMMAudioEnum )");
+		SafeRelease(pTokenCategory);
+		return hResult;
+	}
+
+	// Find Best Token
+	const wchar_t* pVendorPreferred = L"VendorPreferred";
+	const unsigned long lengthVendorPreferred = static_cast<unsigned long>(wcslen(pVendorPreferred));
+	unsigned long length;
+	ULongAdd(lengthVendorPreferred, 1, &length);
+	wchar_t* pAttribsVendorPreferred = new wchar_t[length];
+	StringCchCopyW(pAttribsVendorPreferred, length, pVendorPreferred);
+
+	hResult = pTokenCategory->EnumTokens(L"Language=409;Kinect=True", pAttribsVendorPreferred, &pEnumTokens); //  English "Language=409;Kinect=True"
+	if (FAILED(hResult)) {
+		logError(hResult, "ISpObjectTokenCategory::EnumTokens()");
+		SafeRelease(pTokenCategory);
+		return hResult;
+	}
+	SafeRelease(pTokenCategory);
+	delete[] pAttribsVendorPreferred;
+	SafeRelease(pTokenCategory);
+
+	ISpObjectToken* pEngineToken = nullptr;
+	hResult = pEnumTokens->Next(1, &pEngineToken, nullptr);
+	if (FAILED(hResult)) {
+		logError(hResult, "ISpObjectToken::Next()");
+		return hResult;
+	}
+	SafeRelease(pEnumTokens);
+
+	hResult = pSpeechRecognizer->CreateRecoContext(&pSpeechContext);
+	if (FAILED(hResult)) {
+		logError(hResult, "CreateRecoContext");
+		return hResult;
+	}
+
+	hResult = pSpeechRecognizer->SetPropertyNum(L"AdaptationOn", 0);
+	if (FAILED(hResult)) {
+		logError(hResult, "SetPropertyNum");
+		return hResult;
+	}
+
+	return hResult;
+
+}
+HRESULT KinectAudio::createSpeechRecognizer()
+{
+	// Create Speech Recognizer Instance
+	HRESULT hResult = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpRecognizer), (void**)&pSpeechRecognizer);
+	if (FAILED(hResult)) {
+		logError(hResult, "CoCreateInstance CLSID_SpInprocRecognizer");
+		return hResult;
+	}
+
+	// Set Input Stream
+	hResult = pSpeechRecognizer->SetInput(pSpeechStream, TRUE);
+	if (FAILED(hResult)) {
+		logError(hResult, "ISpRecognizer::SetInput()");
+		return hResult;
+	}
+
+	return hResult;
+}
+
+HRESULT KinectAudio::startSpeechRecognition()
+{
+	HRESULT hResult = pSpeechContext->CreateGrammar(1, &pSpeechGrammar);
+	if (FAILED(hResult)) {
+		logError(hResult, "CreateGrammar");
+		return hResult;
+	}
+
+	hResult = pSpeechGrammar->LoadCmdFromFile(L"grammar.grxml", SPLO_STATIC); // http://www.w3.org/TR/speech-grammar/ (UTF-8/CRLF)
+	if (FAILED(hResult)) {
+		logError(hResult, "LoadCmdFromFile grammar.grxml");
+		return hResult;
+	}
+
+	// Specify that all top level rules in grammar are now active
+	hResult = pSpeechGrammar->SetRuleState(NULL, NULL, SPRS_ACTIVE);
+
+	// Specify that engine should always be reading audio
+	hResult = pSpeechRecognizer->SetRecoState(SPRST_ACTIVE_ALWAYS);
+
+	// Specify that we're only interested in receiving recognition events
+	hResult = pSpeechContext->SetInterest(SPFEI(SPEI_RECOGNITION), SPFEI(SPEI_RECOGNITION));
+
+	// Ensure that engine is recognizing speech and not in paused state
+	hResult = pSpeechContext->Resume(0);
+	if (SUCCEEDED(hResult))
+	{
+		hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
+	}
+	hResult = pSpeechContext->SetNotifyWin32Event(); // needed?
+	if (FAILED(hResult)) {
+		logError(hResult, "SetNotifyWin32Event");
+		return hResult;
+	}
+	hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
+	hEvents[0] = hSpeechEvent;
+
+	return hResult;
+}
 void  KinectAudio::setTrackingID(int index, UINT64 trackingId) {
 	logVerbose("KinectAudio::setTrackingID");
 

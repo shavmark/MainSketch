@@ -27,7 +27,7 @@ namespace From2552Software {
 		error += line;
 		ofLog(OF_LOG_FATAL_ERROR, error);
 	}
-	void BaseClass2552::logError(HRESULT hResult, string message, char*file = __FILE__, int line = __LINE__) {
+	void BaseClass2552::logError(HRESULT hResult, string message, char*file, int line) {
 
 		std::ostringstream stringStream;
 		stringStream << message;
@@ -38,11 +38,11 @@ namespace From2552Software {
 
 	}
 
-	void BaseClass2552::logTrace(string message, ofLogLevel level, char*file = __FILE__, int line = __LINE__) {
+	void BaseClass2552::logTrace(string message, ofLogLevel level, char*file, int line) {
 		string text =  message + " ";
 		text += file;
 		text += ": ";
-		text += line;
+		text += std::to_string(line);
 		ofLog(level, text);
 	}
 

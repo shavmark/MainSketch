@@ -14,14 +14,15 @@ void ofApp::setup(){
 	
 	ofSetFrameRate(60);
 	//ofSetLogLevel(OF_LOG_VERBOSE);
-	From2552Software::Sound sound;
-	sound.test();
+	//From2552Software::Sound sound;
+	//sound.test();
 
 	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
 	ofBackground(0);
 	ofFill();
 
 	myKinect.open();
+	audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	
 	//faces.setup(&myKinect);
