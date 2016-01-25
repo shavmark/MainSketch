@@ -1,5 +1,5 @@
 # MainSketch
-This is an OpenFrameworks .9 and Kinect 2.0 SDK based project, both need to be installed and OpenFramworks needs to be in the Visual Studio 2015 soltuion.
+This is an OpenFrameworks .9 and Kinect 2.0 SDK based project, both need to be installed and OpenFramworks needs to be in the Visual Studio 2015 solution.
 
 https://github.com/elliotwoods and https://github.com/UnaNancyOwen provide Kinect 2 projects and make good references.
 
