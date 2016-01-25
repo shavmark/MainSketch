@@ -121,4 +121,9 @@
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Xsd Include="grammar.grxml">
+      <Filter>src</Filter>
+    </Xsd>
+  </ItemGroup>
 </Project>

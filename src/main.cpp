@@ -1,5 +1,6 @@
 #include <sapi.h>  
 #include <sphelper.h>  
+#include <Synchapi.h>
 #include "ofMain.h"
 #include "ofApp.h"
 

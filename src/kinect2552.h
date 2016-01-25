@@ -215,6 +215,16 @@ namespace From2552Software {
 		virtual void setTrackingID(int index, UINT64 trackingId);
 		IAudioSource*		   pAudioSource;
 		IAudioBeamFrameReader* pAudioBeamReader;
+		IAudioBeamList* pAudioBeamList;
+		IAudioBeam* pAudioBeam;
+		IStream* pAudioStream;
+		ISpStream* pSpeechStream;
+		ISpRecognizer* pSpeechRecognizer;
+		ISpObjectToken* pEngineToken;
+		ISpRecoContext* pSpeechContext;
+		ISpRecoGrammar* pSpeechGrammar;
+
+
 		UINT64 audioTrackingId;
 		int trackingIndex;
 		float angle;

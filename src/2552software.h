@@ -10,6 +10,9 @@
 #include <sphelper.h> // SpFindBestToken()
 #include <strsafe.h>
 #include <intsafe.h>
+#include <Synchapi.h>
+// keep all MS files above ofmain.h
+
 #include "ofMain.h"
 #include "ole2.h"
 
@@ -20,10 +23,10 @@ namespace From2552Software {
 
 		bool checkPointer(IUnknown *p, string message);
 		bool checkPointer(BaseClass2552 *p, string message);
-		void logError(string error);
+		void logError(string error, char*file=__FILE__, int line=__LINE__);
 		void logVerbose(string message) { logTrace(message, OF_LOG_VERBOSE); }; // promote trace, make it obvious and easy
-		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE);
-		void logError(HRESULT hResult, string message = "");
+		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE, char*file = __FILE__, int line = __LINE__);
+		void logError(HRESULT hResult, string message = "", char*file = __FILE__, int line = __LINE__);
 
 		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
 		{
