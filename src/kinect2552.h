@@ -223,7 +223,8 @@ namespace From2552Software {
 		ISpObjectToken* pEngineToken;
 		ISpRecoContext* pSpeechContext;
 		ISpRecoGrammar* pSpeechGrammar;
-
+		HANDLE hSpeechEvent;
+		HANDLE hEvents[1];
 
 		UINT64 audioTrackingId;
 		int trackingIndex;

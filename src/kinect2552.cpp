@@ -866,7 +866,8 @@ KinectAudio::KinectAudio(Kinect2552 *pKinect) {
 	pEngineToken = nullptr;
 	pSpeechContext = nullptr;
 	pSpeechGrammar = nullptr;
-
+	hSpeechEvent = INVALID_HANDLE_VALUE;
+	
 }
 
 KinectAudio::~KinectAudio(){
@@ -880,6 +881,9 @@ KinectAudio::~KinectAudio(){
 	SafeRelease(pEngineToken);
 	SafeRelease(pSpeechContext);
 	SafeRelease(pSpeechGrammar);
+	if (hSpeechEvent != INVALID_HANDLE_VALUE) {
+		CloseHandle(hSpeechEvent);
+	}
 	CoUninitialize();
 }
 
@@ -1021,7 +1025,74 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 		logError(hResult, "Resume");
 		return;
 	}
+	hResult = pSpeechContext->SetNotifyWin32Event(); // needed?
+	if (FAILED(hResult)) {
+		logError(hResult, "SetNotifyWin32Event");
+		return;
+	}
+	hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
+	hEvents[0] = hSpeechEvent;
+	bool exit = false;
+	while (1) {
+		// Waitable Events
+		ResetEvent(hSpeechEvent);
+		unsigned long waitObject = MsgWaitForMultipleObjectsEx(ARRAYSIZE(hEvents), hEvents, INFINITE, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
 
+		if (waitObject == WAIT_OBJECT_0) {
+			// Retrieved Event
+			const float confidenceThreshold = 0.3f;
+			SPEVENT eventStatus;
+			unsigned long eventFetch = 0;
+			pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
+			while (eventFetch > 0) {
+				switch (eventStatus.eEventId) {
+					// Speech Recognition Events
+					//   SPEI_HYPOTHESIS  : Estimate
+					//   SPEI_RECOGNITION : Recognition
+				case SPEI_HYPOTHESIS:
+				case SPEI_RECOGNITION:
+					if (eventStatus.elParamType == SPET_LPARAM_IS_OBJECT) {
+						// Retrieved Phrase
+						ISpRecoResult* pRecoResult = reinterpret_cast< ISpRecoResult* >(eventStatus.lParam);
+						SPPHRASE* pPhrase = nullptr;
+						hResult = pRecoResult->GetPhrase(&pPhrase);
+						if (SUCCEEDED(hResult)) {
+							if ((pPhrase->pProperties != nullptr) && (pPhrase->pProperties->pFirstChild != nullptr)) {
+								// Compared with the Phrase Tag in the grammar file
+								const SPPHRASEPROPERTY* pSemantic = pPhrase->pProperties->pFirstChild;
+								if (pSemantic->SREngineConfidence > confidenceThreshold) {
+									if (wcscmp(L"Red", pSemantic->pszValue) == 0) {
+										std::cout << "Red" << std::endl;
+									}
+									else if (wcscmp(L"Green", pSemantic->pszValue) == 0) {
+										std::cout << "Green" << std::endl;
+									}
+									else if (wcscmp(L"Blue", pSemantic->pszValue) == 0) {
+										std::cout << "Blue" << std::endl;
+									}
+									else if (wcscmp(L"Exit", pSemantic->pszValue) == 0) {
+										std::cout << "Exit" << std::endl;
+										exit = true;
+									}
+								}
+							}
+							CoTaskMemFree(pPhrase);
+						}
+					}
+					break;
+
+				default:
+					break;
+				}
+				pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
+			}
+		}
+		if (exit) {
+			break;
+		}
+	}
+
+	pSpeechRecognizer->SetRecoState(SPRST_INACTIVE_WITH_PURGE);
 }
 
 void  KinectAudio::setTrackingID(int index, UINT64 trackingId) {
