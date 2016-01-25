@@ -331,7 +331,7 @@ namespace From2552Software {
 			IBody* pBody[Kinect2552::personCount] = { 0 };
 
 			hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
-			if (SUCCEEDED(hResult)) {
+			if (!hresultFails(hResult, "GetAndRefreshBodyData")) {
 				for (int count = 0; count < Kinect2552::personCount; count++) {
 					bodies[count].setTalking(0);
 					bodies[count].setValid(false);
@@ -343,8 +343,7 @@ namespace From2552Software {
 						// LEFT OFF HERE
 						UINT64 trackingId = _UI64_MAX;
 						hResult = pBody[count]->get_TrackingId(&trackingId);
-						if (FAILED(hResult)) {
-							logError(hResult, "get_TrackingId");
+						if (hresultFails(hResult, "get_TrackingId")) {
 							return;
 						}
 
@@ -362,23 +361,19 @@ namespace From2552Software {
 
 						// get joints
 						hResult = pBody[count]->GetJoints(JointType::JointType_Count, bodies[count].getJoints());
-						if (SUCCEEDED(hResult)) {
+						if (!hresultFails(hResult, "GetJoints")) {
 							// Left Hand State
 							hResult = pBody[count]->get_HandLeftState(bodies[count].leftHand());
-							if (FAILED(hResult)) {
-								logError(hResult, "get_HandLeftState");
+							if (hresultFails(hResult, "get_HandLeftState")) {
 								return;
 							}
-							// Right Hand State
 							hResult = pBody[count]->get_HandRightState(bodies[count].rightHand());
-							if (FAILED(hResult)) {
-								logError(hResult, "get_HandRightState");
+							if (hresultFails(hResult, "get_HandRightState")) {
 								return;
 							}
 							// Lean
 							hResult = pBody[count]->get_Lean(bodies[count].lean());
-							if (FAILED(hResult)) {
-								logError(hResult, "get_HandRightState");
+							if (hresultFails(hResult, "get_Lean")) {
 								return;
 							}
 							bodies[count].setValid();
@@ -403,55 +398,47 @@ namespace From2552Software {
 	{
 		
 		HRESULT hResult = GetDefaultKinectSensor(&pSensor);
-		if (FAILED(hResult)) {
-			logError(hResult, "GetDefaultKinectSensor");
-			return false; 
+		if (hresultFails(hResult, "GetDefaultKinectSensor")) {
+			return false;
 		}
 
 		hResult = pSensor->Open();
-		if (FAILED(hResult)) {
-			logError(hResult, "IKinectSensor::Open");
+		if (hresultFails(hResult, "IKinectSensor::Open")) {
 			return false;
 		}
 		
 		hResult = pSensor->get_BodyIndexFrameSource(&pBodyIndexSource);
-		if (FAILED(hResult)) {
-			logError(hResult, "get_BodyIndexFrameSource");
+		if (hresultFails(hResult, "get_BodyIndexFrameSource")) {
 			return false;
 		}
 
 		hResult = pSensor->get_ColorFrameSource(&pColorSource);
-		if (FAILED(hResult)) {
-			logError(hResult, "get_ColorFrameSource");
+		if (hresultFails(hResult, "get_ColorFrameSource")) {
 			return false;
 		}
 		
 		hResult = pSensor->get_BodyFrameSource(&pBodySource);
-		if (FAILED(hResult)) {
-			logError(hResult, "get_BodyFrameSource");
+		if (hresultFails(hResult, "get_BodyFrameSource")) {
 			return false;
 		}
+
 		hResult = pBodyIndexSource->OpenReader(&pBodyIndexReader);
-		if (FAILED(hResult)) {
-			logError(hResult, "IBodyIndexFrameSource::OpenReader");
+		if (hresultFails(hResult, "pBodyIndexSource OpenReader")) {
 			return false;
 		}
 
 		hResult = pColorSource->OpenReader(&pColorReader);
-		if (FAILED(hResult)) {
-			logError(hResult, "IColorFrameSource::OpenReader");
+		if (hresultFails(hResult, "pColorSource OpenReader")) {
 			return false;
 		}
 		
 		hResult = pBodySource->OpenReader(&pBodyReader);
-		if (FAILED(hResult)) {
-			logError(hResult, "IBodyFrameSource::OpenReader()");
+		if (hresultFails(hResult, "pBodySource OpenReader")) {
 			return false;
 		}
 
 		hResult = pColorSource->get_FrameDescription(&pDescription);
-		if (FAILED(hResult)) {
-			logError(hResult, "get_FrameDescription");
+		if (hresultFails(hResult, "get_FrameDescription")) {
 			return false;
 		}
 
@@ -459,8 +446,7 @@ namespace From2552Software {
 		pDescription->get_Height(&height);  
 
 		hResult = pSensor->get_CoordinateMapper(&pCoordinateMapper);
-		if (FAILED(hResult)) {
-			logError(hResult, "get_CoordinateMapper");
+		if (hresultFails(hResult, "get_CoordinateMapper")) {
 			return false;
 		}
 
@@ -594,14 +580,12 @@ void KinectFaces::setup(Kinect2552 *kinectInput) {
 		KinectFace face(getKinect());
 
 		HRESULT hResult = CreateFaceFrameSource(getKinect()->getSensor(), 0, features, &face.pFaceSource);
-		if (FAILED(hResult)) {
-			logError(hResult, "CreateFaceFrameSource");
-			return; 
+		if (hresultFails(hResult, "CreateFaceFrameSource")) {
+			return;
 		}
 
 		hResult = face.pFaceSource->OpenReader(&face.pFaceReader);
-		if (FAILED(hResult)) {
-			logError(hResult, "IFaceFrameSource::OpenReader");
+		if (hresultFails(hResult, "face.pFaceSource->OpenReader")) {
 			return;
 		}
 		faces.push_back(face);
@@ -736,10 +720,10 @@ void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 
 	IBodyFrame* pBodyFrame = nullptr;
 	HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame); // getKinect()->getBodyReader() was pBodyReader
-	if (SUCCEEDED(hResult)) {
+	if (!hresultFails(hResult, "AcquireLatestFrame")) {
 		IBody* pBody[Kinect2552::personCount] = { 0 };
 		hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
-		if (SUCCEEDED(hResult)) {
+		if (!hresultFails(hResult, "GetAndRefreshBodyData")) {
 			for (int count = 0; count < Kinect2552::personCount; count++) {
 				BOOLEAN bTracked = false;
 				hResult = pBody[count]->get_IsTracked(&bTracked);
@@ -748,7 +732,7 @@ void  Kinect2552BaseClassBodyItems::aquireBodyFrame()
 					// Set TrackingID to Detect Face etc
 					UINT64 trackingId = _UI64_MAX;
 					hResult = pBody[count]->get_TrackingId(&trackingId);
-					if (SUCCEEDED(hResult)) {
+					if (!hresultFails(hResult, "get_TrackingId")) {
 						setTrackingID(count, trackingId);
 					}
 				}
@@ -832,29 +816,9 @@ bool KinectFaces::aquireFaceFrame()
 					logVerbose("aquireFaceFrame");
 					
 					hResult = pFaceResult->GetFacePointsInColorSpace(FacePointType::FacePointType_Count, faces[count].facePoint);
-					if (FAILED(hResult)) {
-						logError(hResult, "GetFacePointsInColorSpace");
-						return false;
-					}
-
 					hResult = pFaceResult->get_FaceRotationQuaternion(&faces[count].faceRotation);
-					if (FAILED(hResult)) {
-						logError(hResult, "get_FaceRotationQuaternion");
-						return false;
-					}
-
 					hResult = pFaceResult->GetFaceProperties(FaceProperty::FaceProperty_Count, faces[count].faceProperty);
-					if (FAILED(hResult)) {
-						logError(hResult, "GetFaceProperties");
-						return false;
-					}
-
-					// Face Bounding Box
 					hResult = pFaceResult->get_FaceBoundingBoxInColorSpace(&faces[count].boundingBox);
-					if (FAILED(hResult)) {
-						logError(hResult, "get_FaceBoundingBoxInColorSpace");
-						return false;
-					}
 					SafeRelease(pFaceResult);
 					SafeRelease(pFaceFrame);
 					faces[count].setValid();
@@ -1268,70 +1232,6 @@ int  KinectAudio::test(){
 	//HANDLE hEvents[1] = { hSpeechEvent };
 	return 0;
 
-	bool exit = false;
-
-	while (1) {
-		// Waitable Events
-		ResetEvent(hSpeechEvent);
-		unsigned long waitObject = MsgWaitForMultipleObjectsEx(ARRAYSIZE(hEvents), hEvents, INFINITE, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-
-		if (waitObject == WAIT_OBJECT_0) {
-			// Retrieved Event
-			const float confidenceThreshold = 0.3f;
-			SPEVENT eventStatus;
-			//eventStatus.eEventId = SPEI_UNDEFINED;
-			unsigned long eventFetch = 0;
-			pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
-			while (eventFetch > 0) {
-				switch (eventStatus.eEventId) {
-					// Speech Recognition Events
-					//   SPEI_HYPOTHESIS  : Estimate
-					//   SPEI_RECOGNITION : Recognition
-				case SPEI_HYPOTHESIS:
-				case SPEI_RECOGNITION:
-					if (eventStatus.elParamType == SPET_LPARAM_IS_OBJECT) {
-						// Retrieved Phrase
-						ISpRecoResult* pRecoResult = reinterpret_cast< ISpRecoResult* >(eventStatus.lParam);
-						SPPHRASE* pPhrase = nullptr;
-						hResult = pRecoResult->GetPhrase(&pPhrase);
-						if (SUCCEEDED(hResult)) {
-							if ((pPhrase->pProperties != nullptr) && (pPhrase->pProperties->pFirstChild != nullptr)) {
-								// Compared with the Phrase Tag in the grammar file
-								const SPPHRASEPROPERTY* pSemantic = pPhrase->pProperties->pFirstChild;
-								if (pSemantic->SREngineConfidence > confidenceThreshold) {
-									if (wcscmp(L"Red", pSemantic->pszValue) == 0) {
-										std::cout << "Red" << std::endl;
-									}
-									else if (wcscmp(L"Green", pSemantic->pszValue) == 0) {
-										std::cout << "Green" << std::endl;
-									}
-									else if (wcscmp(L"Blue", pSemantic->pszValue) == 0) {
-										std::cout << "Blue" << std::endl;
-									}
-									else if (wcscmp(L"Exit", pSemantic->pszValue) == 0) {
-										std::cout << "Exit" << std::endl;
-										exit = true;
-									}
-								}
-							}
-							CoTaskMemFree(pPhrase);
-						}
-					}
-					break;
-
-				default:
-					break;
-				}
-				pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
-			}
-		}
-
-		// Input Key ( Exit ESC key )
-		if (GetKeyState(VK_ESCAPE) < 0 || exit) {
-			break;
-		}
-	}
-
 	
 }
 void KinectAudio::test2() {
@@ -1396,42 +1296,34 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 	Kinect2552BaseClassBodyItems::setup(pKinect); 
 
 	HRESULT hResult = getKinect()->getSensor()->get_AudioSource(&pAudioSource);
-	if (FAILED(hResult)) {
-		logError(hResult, "get_AudioSource");
+	if (hresultFails(hResult, "get_AudioSource")) {
 		return;
 	}
 
 	hResult = pAudioSource->OpenReader(&pAudioBeamReader);
-	if (FAILED(hResult)) {
-		logError(hResult, "IAudioSource::OpenReader");
+	if (hresultFails(hResult, "IAudioSource::OpenReader")) {
 		return;
 	}
 
 	hResult = pAudioSource->get_AudioBeams(&pAudioBeamList);
-	if (FAILED(hResult)) {
-		logError(hResult, "IAudioSource::get_AudioBeams");
+	if (hresultFails(hResult, "IAudioSource::get_AudioBeams")) {
 		return;
 	}
 
 	hResult = pAudioBeamList->OpenAudioBeam(0, &pAudioBeam);
-	if (FAILED(hResult)) {
-		logError(hResult, "IAudioSource::OpenAudioBeam");
+	if (hresultFails(hResult, "pAudioBeamList->OpenAudioBeam")) {
 		return;
 	}
 
 	hResult = pAudioBeam->OpenInputStream(&pAudioStream);
-	if (FAILED(hResult)) {
-		logError(hResult, "IAudioSource::OpenInputStream");
+	if (hresultFails(hResult, "IAudioSource::OpenInputStream")) {
 		return;
 	}
-
-	test();
 
 	audioStream = new KinectAudioStream(pAudioStream);
 
 	hResult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
-	if (FAILED(hResult)) {
-		logError(hResult, "CoInitializeEx");
+	if (hresultFails(hResult, "CoInitializeEx")) {
 		return;
 	}
 
@@ -1448,75 +1340,13 @@ void KinectAudio::setup(Kinect2552 *pKinect) {
 		return;
 	}
 
-	bool exit = false;
-	while (1) {
-		// Waitable Events
-		ResetEvent(hSpeechEvent);
-		unsigned long waitObject = MsgWaitForMultipleObjectsEx(ARRAYSIZE(hEvents), hEvents, INFINITE, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
-
-		if (waitObject == WAIT_OBJECT_0) {
-			// Retrieved Event
-			const float confidenceThreshold = 0.3f;
-			SPEVENT eventStatus;
-			unsigned long eventFetch = 0;
-			pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
-			while (eventFetch > 0) {
-				switch (eventStatus.eEventId) {
-					// Speech Recognition Events
-					//   SPEI_HYPOTHESIS  : Estimate
-					//   SPEI_RECOGNITION : Recognition
-				case SPEI_HYPOTHESIS:
-				case SPEI_RECOGNITION:
-					if (eventStatus.elParamType == SPET_LPARAM_IS_OBJECT) {
-						// Retrieved Phrase
-						ISpRecoResult* pRecoResult = reinterpret_cast< ISpRecoResult* >(eventStatus.lParam);
-						SPPHRASE* pPhrase = nullptr;
-						hResult = pRecoResult->GetPhrase(&pPhrase);
-						if (SUCCEEDED(hResult)) {
-							if ((pPhrase->pProperties != nullptr) && (pPhrase->pProperties->pFirstChild != nullptr)) {
-								// Compared with the Phrase Tag in the grammar file
-								const SPPHRASEPROPERTY* pSemantic = pPhrase->pProperties->pFirstChild;
-								if (pSemantic->SREngineConfidence > confidenceThreshold) {
-									if (wcscmp(L"Red", pSemantic->pszValue) == 0) {
-										std::cout << "Red" << std::endl;
-									}
-									else if (wcscmp(L"Green", pSemantic->pszValue) == 0) {
-										std::cout << "Green" << std::endl;
-									}
-									else if (wcscmp(L"Blue", pSemantic->pszValue) == 0) {
-										std::cout << "Blue" << std::endl;
-									}
-									else if (wcscmp(L"Exit", pSemantic->pszValue) == 0) {
-										std::cout << "Exit" << std::endl;
-										exit = true;
-									}
-								}
-							}
-							CoTaskMemFree(pPhrase);
-						}
-					}
-					break;
-
-				default:
-					break;
-				}
-				pSpeechContext->GetEvents(1, &eventStatus, &eventFetch);
-			}
-		}
-		if (exit) {
-			break;
-		}
-	}
-
-	pSpeechRecognizer->SetRecoState(SPRST_INACTIVE_WITH_PURGE);
 }
 
 HRESULT KinectAudio::setupSpeachStream() {
 
 	HRESULT hResult = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&pSpeechStream);
-	if (FAILED(hResult)) {
-		logError(hResult, " CoCreateInstance( CLSID_SpStream )");
-		return hResult;
+	if (hresultFails(hResult, "CoCreateInstance( CLSID_SpStream )")) {
+		return;
 	}
 
 	WORD AudioFormat = WAVE_FORMAT_PCM;
@@ -1530,8 +1360,7 @@ HRESULT KinectAudio::setupSpeachStream() {
 
 	audioStream->SetSpeechState(true);
 	hResult = pSpeechStream->SetBaseStream(audioStream, SPDFID_WaveFormatEx, &waveFormat);
-	if (FAILED(hResult)) {
-		logError(hResult, " ISpStream::SetBaseStream");
+	if (hresultFails(hResult, "ISpStream::SetBaseStream")) {
 		return hResult;
 	}
 
@@ -1542,22 +1371,19 @@ HRESULT KinectAudio::findKinect() {
 
 	ISpObjectTokenCategory* pTokenCategory = nullptr;
 	HRESULT hResult = CoCreateInstance(CLSID_SpObjectTokenCategory, nullptr, CLSCTX_ALL, __uuidof(ISpObjectTokenCategory), reinterpret_cast<void**>(&pTokenCategory));
-	if (FAILED(hResult)) {
-		logError(hResult, "CoCreateInstance( CLSID_SpObjectTokenCategory )");
+	if (hresultFails(hResult, "CoCreateInstance")) {
 		return hResult;
 	}
 
 	hResult = pTokenCategory->SetId(SPCAT_RECOGNIZERS, false);
-	if (FAILED(hResult)) {
-		logError(hResult, "ISpObjectTokenCategory::SetId()");
+	if (hresultFails(hResult, "ISpObjectTokenCategory::SetId()")) {
 		SafeRelease(pTokenCategory);
 		return hResult;
 	}
 
 	IEnumSpObjectTokens* pEnumTokens = nullptr;
 	hResult = CoCreateInstance(CLSID_SpMMAudioEnum, nullptr, CLSCTX_ALL, __uuidof(IEnumSpObjectTokens), reinterpret_cast<void**>(&pEnumTokens));
-	if (FAILED(hResult)) {
-		logError(hResult, "CoCreateInstance( CLSID_SpMMAudioEnum )");
+	if (hresultFails(hResult, "CoCreateInstance( CLSID_SpMMAudioEnum )")) {
 		SafeRelease(pTokenCategory);
 		return hResult;
 	}
@@ -1571,42 +1397,41 @@ HRESULT KinectAudio::findKinect() {
 	StringCchCopyW(pAttribsVendorPreferred, length, pVendorPreferred);
 
 	hResult = pTokenCategory->EnumTokens(L"Language=409;Kinect=True", pAttribsVendorPreferred, &pEnumTokens); //  English "Language=409;Kinect=True"
-	if (FAILED(hResult)) {
-		logError(hResult, "ISpObjectTokenCategory::EnumTokens()");
+	if (hresultFails(hResult, "pTokenCategory->EnumTokens")) {
 		SafeRelease(pTokenCategory);
 		return hResult;
 	}
+
 	SafeRelease(pTokenCategory);
 	delete[] pAttribsVendorPreferred;
 
 	ISpObjectToken* pEngineToken = nullptr;
 	hResult = pEnumTokens->Next(1, &pEngineToken, nullptr);
-	if (FAILED(hResult)) {
-		logError(hResult, "ISpObjectToken::Next()");
+	if (hresultFails(hResult, "ISpObjectToken Next")) {
+		SafeRelease(pTokenCategory);
 		return hResult;
 	}
-	if (hResult = S_FALSE) {
-		logError(hResult, "Kinect not found");
-		return hResult;
+	if (hResult == S_FALSE) {
+		//note this but continus things will still work
+		logTrace("Kinect not found");
 	}
 	SafeRelease(pEnumTokens);
+	SafeRelease(pTokenCategory);
+
 	// Set Speech Recognizer
 	hResult = pSpeechRecognizer->SetRecognizer(pEngineToken);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetRecognizer");
+	if (hresultFails(hResult, "SetRecognizer")) {
 		return hResult;
 	}
 	SafeRelease(pEngineToken);
 
 	hResult = pSpeechRecognizer->CreateRecoContext(&pSpeechContext);
-	if (FAILED(hResult)) {
-		logError(hResult, "CreateRecoContext");
+	if (hresultFails(hResult, "CreateRecoContext")) {
 		return hResult;
 	}
 
 	hResult = pSpeechRecognizer->SetPropertyNum(L"AdaptationOn", 0);
-	if (FAILED(hResult)) {
-		logError(hResult, "SetPropertyNum");
+	if (hresultFails(hResult, "SetPropertyNum")) {
 		return hResult;
 	}
 
@@ -1617,15 +1442,13 @@ HRESULT KinectAudio::createSpeechRecognizer()
 {
 	// Create Speech Recognizer Instance
 	HRESULT hResult = CoCreateInstance(CLSID_SpInprocRecognizer, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpRecognizer), (void**)&pSpeechRecognizer);
-	if (FAILED(hResult)) {
-		logError(hResult, "CoCreateInstance CLSID_SpInprocRecognizer");
+	if (hresultFails(hResult, "CLSID_SpInprocRecognizer")) {
 		return hResult;
 	}
 
 	// Set Input Stream
 	hResult = pSpeechRecognizer->SetInput(pSpeechStream, TRUE);
-	if (FAILED(hResult)) {
-		logError(hResult, "ISpRecognizer::SetInput()");
+	if (hresultFails(hResult, "pSpeechRecognizer->SetInput")) {
 		return hResult;
 	}
 
@@ -1635,14 +1458,12 @@ HRESULT KinectAudio::createSpeechRecognizer()
 HRESULT KinectAudio::startSpeechRecognition()
 {
 	HRESULT hResult = pSpeechContext->CreateGrammar(1, &pSpeechGrammar);
-	if (FAILED(hResult)) {
-		logError(hResult, "CreateGrammar");
+	if (hresultFails(hResult, "CreateGrammar")) {
 		return hResult;
 	}
 
 	hResult = pSpeechGrammar->LoadCmdFromFile(L"grammar.grxml", SPLO_STATIC); // http://www.w3.org/TR/speech-grammar/ (UTF-8/CRLF)
-	if (FAILED(hResult)) {
-		logError(hResult, "LoadCmdFromFile grammar.grxml");
+	if (hresultFails(hResult, "LoadCmdFromFile")) {
 		return hResult;
 	}
 
@@ -1662,10 +1483,6 @@ HRESULT KinectAudio::startSpeechRecognition()
 		hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
 	}
 	hResult = pSpeechContext->SetNotifyWin32Event(); // needed?
-	if (FAILED(hResult)) {
-		logError(hResult, "SetNotifyWin32Event");
-		return hResult;
-	}
 	hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
 	hEvents[0] = hSpeechEvent;
 
@@ -1694,18 +1511,18 @@ void KinectAudio::getAudioCorrelation() {
 
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);
-	if (SUCCEEDED(hResult)) {
+	if (!hresultFails(hResult, "getAudioBeamReader")) {
 		IAudioBeamFrame* pAudioBeamFrame = nullptr;
 		hResult = pAudioBeamList->OpenAudioBeamFrame(0, &pAudioBeamFrame);
-		if (SUCCEEDED(hResult)) {
+		if (!hresultFails(hResult, "OpenAudioBeamFrame")) {
 			IAudioBeamSubFrame* pAudioBeamSubFrame = nullptr;
 			hResult = pAudioBeamFrame->GetSubFrame(0, &pAudioBeamSubFrame);
-			if (SUCCEEDED(hResult)) {
+			if (!hresultFails(hResult, "GetSubFrame")) {
 				hResult = pAudioBeamSubFrame->get_AudioBodyCorrelationCount(&correlationCount);
 				if (SUCCEEDED(hResult) && (correlationCount != 0)) {
 					IAudioBodyCorrelation* pAudioBodyCorrelation = nullptr;
 					hResult = pAudioBeamSubFrame->GetAudioBodyCorrelation(0, &pAudioBodyCorrelation);
-					if (SUCCEEDED(hResult)) {
+					if (!hresultFails(hResult, "GetAudioBodyCorrelation")) {
 						hResult = pAudioBodyCorrelation->get_BodyTrackingId(&audioTrackingId);
 						SafeRelease(pAudioBodyCorrelation);
 					}
@@ -1724,7 +1541,7 @@ void KinectAudio::getAudioBeam() {
 
 	IAudioBeamFrameList* pAudioBeamList = nullptr;
 	HRESULT hResult = getAudioBeamReader()->AcquireLatestBeamFrames(&pAudioBeamList);
-	if (SUCCEEDED(hResult)) {
+	if (!hresultFails(hResult, "getAudioBeamReader")) {
 		//bugbug add error handling maybe other clean up
 		UINT beamCount = 0;
 		hResult = pAudioBeamList->get_BeamCount(&beamCount);
@@ -1734,11 +1551,11 @@ void KinectAudio::getAudioBeam() {
 			confidence = 0.0f;
 			IAudioBeamFrame* pAudioBeamFrame = nullptr;
 			hResult = pAudioBeamList->OpenAudioBeamFrame(beam, &pAudioBeamFrame);
-			if (SUCCEEDED(hResult)) {
+			if (!hresultFails(hResult, "OpenAudioBeamFrame")) {
 				// Get Beam Angle and Confidence
 				IAudioBeam* pAudioBeam = nullptr;
 				hResult = pAudioBeamFrame->get_AudioBeam(&pAudioBeam);
-				if (SUCCEEDED(hResult)) {
+				if (!hresultFails(hResult, "get_AudioBeam")) {
 					pAudioBeam->get_BeamAngle(&angle); // radian [-0.872665f, 0.872665f]
 					pAudioBeam->get_BeamAngleConfidence(&confidence); // confidence [0.0f, 1.0f]
 					SafeRelease(pAudioBeam);

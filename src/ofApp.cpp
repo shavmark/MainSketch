@@ -21,8 +21,8 @@ void ofApp::setup(){
 	ofBackground(0);
 	ofFill();
 
-	//myKinect.open();
-	audio.test();
+	myKinect.open();
+	audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	

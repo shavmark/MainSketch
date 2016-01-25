@@ -3,7 +3,7 @@
 #pragma comment( lib, "sapi.lib" )
 
 namespace From2552Software {
-	bool BaseClass2552::checkPointer2(IUnknown *p, string message, char*file, int line) {
+	bool Trace2552::checkPointer2(IUnknown *p, const string&  message, char*file, int line) {
 		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
 			logError2("in valid pointer " + message, file, line);
@@ -11,7 +11,7 @@ namespace From2552Software {
 		}
 		return true;
 	}
-	bool BaseClass2552::checkPointer2(BaseClass2552 *p, string message, char*file, int line) {
+	bool Trace2552::checkPointer2(BaseClass2552 *p, const string&  message, char*file, int line) {
 		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
 			logError2("in valid pointer " + message, file, line);
@@ -19,15 +19,17 @@ namespace From2552Software {
 		}
 		return true;
 	}
-
-	void BaseClass2552::logError2(string errorIn, char* file, int line ) {
-		string error = "Error " + errorIn + " ";
-		error += file;
-		error += ": ";
-		error += line;
-		ofLog(OF_LOG_FATAL_ERROR, error);
+	string Trace2552::buildString(const string& text, char* file, int line) {
+		string s = text + " ";
+		s += file;
+		s += ": ";
+		s += std::to_string(line);
+		return s;
 	}
-	void BaseClass2552::logError2(HRESULT hResult, string message, char*file, int line) {
+	void Trace2552::logError2(const string& errorIn, char* file, int line ) {
+		ofLog(OF_LOG_FATAL_ERROR, buildString(errorIn, file,  line));
+	}
+	void Trace2552::logError2(HRESULT hResult, const string&  message, char*file, int line) {
 
 		std::ostringstream stringStream;
 		stringStream << message;
@@ -37,13 +39,20 @@ namespace From2552Software {
 		logError2(stringStream.str(), file, line);
 
 	}
+	void Trace2552::logVerbose2(const string& message, char*file, int line) {
+		ofLog(OF_LOG_VERBOSE, buildString(message, file, line));
 
-	void BaseClass2552::logTrace2(string message, ofLogLevel level, char*file, int line) {
-		string text =  message + " ";
-		text += file;
-		text += ": ";
-		text += std::to_string(line);
-		ofLog(level, text);
+	}
+	void Trace2552::logTrace2(const string& message,  char*file, int line) {
+		ofLog(OF_LOG_NOTICE, buildString(message, file, line));
+	}
+	bool Trace2552::CheckHresult2(HRESULT hResult, const string& message, char*file, int line) {
+		logVerbose2(message, file, line);
+		if (FAILED(hResult)) {
+			logError2(hResult, message, file, line);
+			return true; // error found
+		}
+		return false; // no error
 	}
 
 	void Sound::test() {
