@@ -327,7 +327,7 @@ namespace From2552Software {
 	void KinectBodies::update() {
 		IBodyFrame* pBodyFrame = nullptr;
 		HRESULT hResult = getKinect()->getBodyReader()->AcquireLatestFrame(&pBodyFrame);
-		if (SUCCEEDED(hResult)) {
+		if (!hresultFails(hResult, "AcquireLatestFrame")) {
 			IBody* pBody[Kinect2552::personCount] = { 0 };
 
 			hResult = pBodyFrame->GetAndRefreshBodyData(Kinect2552::personCount, pBody);
@@ -1259,21 +1259,33 @@ void KinectAudio::test2() {
 					ISpRecoResult* pRecoResult = reinterpret_cast<ISpRecoResult*>(eventStatus.lParam);
 					SPPHRASE* pPhrase = nullptr;
 					HRESULT hResult = pRecoResult->GetPhrase(&pPhrase);
-					if (SUCCEEDED(hResult)) {
+					if (!hresultFails(hResult, "GetPhrase")) {
 						if ((pPhrase->pProperties != nullptr) && (pPhrase->pProperties->pFirstChild != nullptr)) {
 							// Compared with the Phrase Tag in the grammar file
 							const SPPHRASEPROPERTY* pSemantic = pPhrase->pProperties->pFirstChild;
+							switch (pSemantic->Confidence) {
+							case SP_LOW_CONFIDENCE:
+								logTrace("SP_LOW_CONFIDENCE: "+ Trace2552::wstrtostr(pSemantic->pszValue));
+								break;
+							case SP_NORMAL_CONFIDENCE:
+								logTrace("SP_NORMAL_CONFIDENCE: " + Trace2552::wstrtostr(pSemantic->pszValue));
+								break;
+							case SP_HIGH_CONFIDENCE:
+								logTrace("SP_HIGH_CONFIDENCE: " + Trace2552::wstrtostr(pSemantic->pszValue));
+								break;
+							}
 							if (pSemantic->SREngineConfidence > confidenceThreshold) {
 								if (wcscmp(L"Red", pSemantic->pszValue) == 0) {
-									std::cout << "Red" << std::endl;
+									logTrace("Red");
 								}
 								else if (wcscmp(L"Green", pSemantic->pszValue) == 0) {
-									std::cout << "Green" << std::endl;
+									logTrace("Green");
 								}
 								else if (wcscmp(L"Blue", pSemantic->pszValue) == 0) {
-									std::cout << "Blue" << std::endl;
+									logTrace("Blue");
 								}
 								else if (wcscmp(L"Exit", pSemantic->pszValue) == 0) {
+									logTrace("Exit");
 									std::cout << "Exit" << std::endl;
 									//exit = true;
 								}
@@ -1346,7 +1358,7 @@ HRESULT KinectAudio::setupSpeachStream() {
 
 	HRESULT hResult = CoCreateInstance(CLSID_SpStream, NULL, CLSCTX_INPROC_SERVER, __uuidof(ISpStream), (void**)&pSpeechStream);
 	if (hresultFails(hResult, "CoCreateInstance( CLSID_SpStream )")) {
-		return;
+		return hResult;
 	}
 
 	WORD AudioFormat = WAVE_FORMAT_PCM;
@@ -1482,7 +1494,6 @@ HRESULT KinectAudio::startSpeechRecognition()
 	{
 		hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
 	}
-	hResult = pSpeechContext->SetNotifyWin32Event(); // needed?
 	hSpeechEvent = pSpeechContext->GetNotifyEventHandle();
 	hEvents[0] = hSpeechEvent;
 

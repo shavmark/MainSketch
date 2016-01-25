@@ -39,12 +39,10 @@ namespace From2552Software {
 		logError2(stringStream.str(), file, line);
 
 	}
-	void Trace2552::logVerbose2(const string& message, char*file, int line) {
-		ofLog(OF_LOG_VERBOSE, buildString(message, file, line));
-
-	}
 	void Trace2552::logTrace2(const string& message,  char*file, int line) {
-		ofLog(OF_LOG_NOTICE, buildString(message, file, line));
+		if (ofGetLogLevel() >= OF_LOG_NOTICE) {
+			ofLog(OF_LOG_NOTICE, buildString(message, file, line));
+		}
 	}
 	bool Trace2552::CheckHresult2(HRESULT hResult, const string& message, char*file, int line) {
 		logVerbose2(message, file, line);
@@ -53,6 +51,15 @@ namespace From2552Software {
 			return true; // error found
 		}
 		return false; // no error
+	}
+	std::string Trace2552::wstrtostr(const std::wstring &wstr)	{
+		std::string strTo;
+		char *szTo = new char[wstr.length() + 1];
+		szTo[wstr.size()] = '\0';
+		WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, szTo, (int)wstr.length(), NULL, NULL);
+		strTo = szTo;
+		delete[] szTo;
+		return strTo;
 	}
 
 	void Sound::test() {

@@ -25,16 +25,21 @@ namespace From2552Software {
 	};
 
 	class Trace2552 {
-			public:
+	public:
 		static bool checkPointer2(IUnknown *p, const string&  message, char*file = __FILE__, int line = __LINE__);
 		static bool checkPointer2(BaseClass2552 *p, const string&  message, char*file = __FILE__, int line = __LINE__);
 
 		static void logError2(const string& error, char*file, int line);
-		static void logVerbose2(const string& message, char*file, int line);
+		static void logVerbose2(const string& message, char*file, int line) {
+			if (ofGetLogLevel() >= OF_LOG_VERBOSE) {
+				ofLog(OF_LOG_VERBOSE, buildString(message, file, line));
+			}
+		}
 		static void logTrace2(const string& message, char*file, int line);
 		static void logError2(HRESULT hResult, const string&  message, char*file, int line);
 		static bool CheckHresult2(HRESULT hResult, const string& message, char*file, int line);
 		static string buildString(const string& errorIn, char* file, int line);
+		static std::string wstrtostr(const std::wstring &wstr);
 
 		// get the right line number
 #define logError(p1, p2) Trace2552::logError2(p1, p2, __FILE__, __LINE__)
