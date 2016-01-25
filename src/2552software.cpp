@@ -6,7 +6,7 @@ namespace From2552Software {
 	bool Trace2552::checkPointer2(IUnknown *p, const string&  message, char*file, int line) {
 		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
-			logError2("in valid pointer " + message, file, line);
+			logError2("invalid pointer " + message, file, line);
 			return false;
 		}
 		return true;
@@ -14,7 +14,7 @@ namespace From2552Software {
 	bool Trace2552::checkPointer2(BaseClass2552 *p, const string&  message, char*file, int line) {
 		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
-			logError2("in valid pointer " + message, file, line);
+			logError2("invalid pointer " + message, file, line);
 			return false;
 		}
 		return true;
@@ -45,11 +45,13 @@ namespace From2552Software {
 		}
 	}
 	bool Trace2552::CheckHresult2(HRESULT hResult, const string& message, char*file, int line) {
-		logVerbose2(message, file, line);
 		if (FAILED(hResult)) {
-			logError2(hResult, message, file, line);
+			if (hResult != E_PENDING) {
+				logError2(hResult, message, file, line);
+			}
 			return true; // error found
 		}
+		logVerbose2(message, file, line);
 		return false; // no error
 	}
 	std::string Trace2552::wstrtostr(const std::wstring &wstr)	{

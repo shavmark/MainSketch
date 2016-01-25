@@ -283,13 +283,13 @@ namespace From2552Software {
 		void getAudioCorrelation();
 		int  getTrackingBodyIndex() {return trackingIndex;}
 		UINT64 getTrackingID() { return audioTrackingId; }
-		int test();
-		void test2(); // update
+
 	protected:
 		virtual void setTrackingID(int index, UINT64 trackingId);
 		HRESULT createSpeechRecognizer();
 		HRESULT startSpeechRecognition();
-		
+		void getAudioCommands();
+
 		HRESULT findKinect();
 		HRESULT setupSpeachStream();
 
@@ -303,7 +303,6 @@ namespace From2552Software {
 		ISpRecoContext* pSpeechContext;
 		ISpRecoGrammar* pSpeechGrammar;
 		HANDLE hSpeechEvent;
-		HANDLE hEvents[1];
 		KinectAudioStream* audioStream;
 		UINT64 audioTrackingId;
 		int trackingIndex;

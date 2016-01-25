@@ -39,7 +39,7 @@ void ofApp::update(){
 	//faces.update();
 	//bodies.update();
 	//audio.update();
-	audio.test2();
+	audio.update();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
