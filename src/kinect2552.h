@@ -11,6 +11,79 @@
 
 namespace From2552Software {
 
+	// <summary>
+	/// Asynchronous IStream implementation that captures audio data from Kinect audio sensor in a background thread
+	/// and lets clients read captured audio from any thread. from msft sdk
+	/// </summary>
+	class KinectAudioStream : public IStream
+	{
+	public:
+		/////////////////////////////////////////////
+		// KinectAudioStream methods
+
+		/// <summary>
+		/// KinectAudioStream constructor.
+		/// </summary>
+		KinectAudioStream(IStream *p32BitAudioStream);
+
+		/// <summary>
+		/// SetSpeechState method
+		/// </summary>
+		void SetSpeechState(bool state);
+
+		/////////////////////////////////////////////
+		// IUnknown methods
+		STDMETHODIMP_(ULONG) AddRef() { return InterlockedIncrement(&m_cRef); }
+		STDMETHODIMP_(ULONG) Release()
+		{
+			UINT ref = InterlockedDecrement(&m_cRef);
+			if (ref == 0)
+			{
+				delete this;
+			}
+			return ref;
+		}
+		STDMETHODIMP QueryInterface(REFIID riid, void **ppv)
+		{
+			if (riid == IID_IUnknown)
+			{
+				AddRef();
+				*ppv = (IUnknown*)this;
+				return S_OK;
+			}
+			else if (riid == IID_IStream)
+			{
+				AddRef();
+				*ppv = (IStream*)this;
+				return S_OK;
+			}
+			else
+			{
+				return E_NOINTERFACE;
+			}
+		}
+
+		/////////////////////////////////////////////
+		// IStream methods
+		STDMETHODIMP Read(void *, ULONG, ULONG *);
+		STDMETHODIMP Write(const void *, ULONG, ULONG *);
+		STDMETHODIMP Seek(LARGE_INTEGER, DWORD, ULARGE_INTEGER *);
+		STDMETHODIMP SetSize(ULARGE_INTEGER);
+		STDMETHODIMP CopyTo(IStream *, ULARGE_INTEGER, ULARGE_INTEGER *, ULARGE_INTEGER *);
+		STDMETHODIMP Commit(DWORD);
+		STDMETHODIMP Revert();
+		STDMETHODIMP LockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD);
+		STDMETHODIMP UnlockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD);
+		STDMETHODIMP Stat(STATSTG *, DWORD);
+		STDMETHODIMP Clone(IStream **);
+
+	private:
+
+		// Number of references to this object
+		UINT                    m_cRef;
+		IStream*                m_p32BitAudio;
+		bool                    m_SpeechActive;
+	};
 	//base class for things like faces
 	class Kinect2552BaseClass : public BaseClass2552WithDrawing {
 	public:
@@ -210,11 +283,13 @@ namespace From2552Software {
 		void getAudioCorrelation();
 		int  getTrackingBodyIndex() {return trackingIndex;}
 		UINT64 getTrackingID() { return audioTrackingId; }
-
+		int test();
+		void test2(); // update
 	protected:
 		virtual void setTrackingID(int index, UINT64 trackingId);
 		HRESULT createSpeechRecognizer();
 		HRESULT startSpeechRecognition();
+		
 		HRESULT findKinect();
 		HRESULT setupSpeachStream();
 
@@ -229,7 +304,7 @@ namespace From2552Software {
 		ISpRecoGrammar* pSpeechGrammar;
 		HANDLE hSpeechEvent;
 		HANDLE hEvents[1];
-
+		KinectAudioStream* audioStream;
 		UINT64 audioTrackingId;
 		int trackingIndex;
 		float angle;

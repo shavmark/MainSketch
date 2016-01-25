@@ -21,13 +21,14 @@ void ofApp::setup(){
 	ofBackground(0);
 	ofFill();
 
-	myKinect.open();
-	audio.setup(&myKinect);
+	//myKinect.open();
+	audio.test();
+	//audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	
 	//faces.setup(&myKinect);
 	//bodies.useFaces();
-	bodies.setup(&myKinect);
+	//bodies.setup(&myKinect);
 
 	ofSetWindowShape(640 * 2, 480 * 2);
 }
@@ -36,9 +37,9 @@ void ofApp::setup(){
 void ofApp::update(){
 	//faces.baseline(); //use to debug, can do what ever needed to get things to work, to create a working base line
 	//faces.update();
-	bodies.update();
+	//bodies.update();
 	//audio.update();
-
+	audio.test2();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -101,7 +102,7 @@ void ofApp::draw(){
 	//kinect.getBodySource()->drawProjected(previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.draw();
-	bodies.draw();
+	//bodies.draw();
 
 }
 

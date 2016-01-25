@@ -3,42 +3,42 @@
 #pragma comment( lib, "sapi.lib" )
 
 namespace From2552Software {
-	bool BaseClass2552::checkPointer(IUnknown *p, string message) {
-		logVerbose(message); // should give some good trace
+	bool BaseClass2552::checkPointer2(IUnknown *p, string message, char*file, int line) {
+		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
-			logError("in valid pointer " + message);
+			logError2("in valid pointer " + message, file, line);
 			return false;
 		}
 		return true;
 	}
-	bool BaseClass2552::checkPointer(BaseClass2552 *p, string message) {
-		logVerbose(message); // should give some good trace
+	bool BaseClass2552::checkPointer2(BaseClass2552 *p, string message, char*file, int line) {
+		logVerbose2(message, file, line); // should give some good trace
 		if (p == nullptr) {
-			logError("in valid pointer " + message);
+			logError2("in valid pointer " + message, file, line);
 			return false;
 		}
 		return true;
 	}
 
-	void BaseClass2552::logError(string errorIn, char* file, int line ) {
+	void BaseClass2552::logError2(string errorIn, char* file, int line ) {
 		string error = "Error " + errorIn + " ";
 		error += file;
 		error += ": ";
 		error += line;
 		ofLog(OF_LOG_FATAL_ERROR, error);
 	}
-	void BaseClass2552::logError(HRESULT hResult, string message, char*file, int line) {
+	void BaseClass2552::logError2(HRESULT hResult, string message, char*file, int line) {
 
 		std::ostringstream stringStream;
 		stringStream << message;
 		stringStream << ":  ";
 		stringStream << std::hex << hResult; //todo example this to text bugbug
 
-		logError(stringStream.str(), file, line);
+		logError2(stringStream.str(), file, line);
 
 	}
 
-	void BaseClass2552::logTrace(string message, ofLogLevel level, char*file, int line) {
+	void BaseClass2552::logTrace2(string message, ofLogLevel level, char*file, int line) {
 		string text =  message + " ";
 		text += file;
 		text += ": ";

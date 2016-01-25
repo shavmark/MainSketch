@@ -21,12 +21,20 @@ namespace From2552Software {
 	class BaseClass2552 {
 	public:
 
-		bool checkPointer(IUnknown *p, string message);
-		bool checkPointer(BaseClass2552 *p, string message);
-		void logError(string error, char*file=__FILE__, int line=__LINE__);
-		void logVerbose(string message) { logTrace(message, OF_LOG_VERBOSE); }; // promote trace, make it obvious and easy
-		void logTrace(string message, ofLogLevel level = OF_LOG_NOTICE, char*file = __FILE__, int line = __LINE__);
-		void logError(HRESULT hResult, string message = "", char*file = __FILE__, int line = __LINE__);
+		static bool checkPointer2(IUnknown *p, string message, char*file = __FILE__, int line = __LINE__);
+		static bool checkPointer2(BaseClass2552 *p, string message, char*file = __FILE__, int line = __LINE__);
+
+		static void logError2(string error, char*file=__FILE__, int line=__LINE__);
+		static void logVerbose2(string message, char*file = __FILE__, int line = __LINE__) { logTrace2(message, OF_LOG_VERBOSE, file, line); }; // promote trace, make it obvious and easy
+		static void logTrace2(string message, ofLogLevel level = OF_LOG_NOTICE, char*file = __FILE__, int line = __LINE__);
+		static void logError2(HRESULT hResult, string message = "", char*file = __FILE__, int line = __LINE__);
+
+// get the right line number
+#define logError(p1, p2) BaseClass2552::logError2(p1, p2, __FILE__, __LINE__)
+#define logErrorString(p1) BaseClass2552::logError2(p1, __FILE__, __LINE__)
+#define logVerbose(p1) BaseClass2552::logVerbose2(p1, __FILE__, __LINE__)
+#define logTrace(p1) BaseClass2552::logTrace2(p1, OF_LOG_NOTICE, __FILE__, __LINE__)
+#define checkPointer(p1, p2) BaseClass2552::checkPointer2(p1, p2, __FILE__, __LINE__)
 
 		template<class Interface> void SafeRelease(Interface *& pInterfaceToRelease)
 		{
@@ -37,7 +45,6 @@ namespace From2552Software {
 		}
 
 	private:
-	
 
 	};
 
