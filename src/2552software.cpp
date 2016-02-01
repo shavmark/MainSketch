@@ -20,23 +20,14 @@ namespace From2552Software {
 		return true;
 	}
 	string Trace2552::buildString(const string& text, char* file, int line) {
-		string s = text + " ";
-		s += file;
-		s += ": ";
-		s += std::to_string(line);
-		return s;
+		return text + " " + file + ": " + ofToString(line);
 	}
 	void Trace2552::logError2(const string& errorIn, char* file, int line ) {
 		ofLog(OF_LOG_FATAL_ERROR, buildString(errorIn, file,  line));
 	}
 	void Trace2552::logError2(HRESULT hResult, const string&  message, char*file, int line) {
 
-		std::ostringstream stringStream;
-		stringStream << message;
-		stringStream << ":  ";
-		stringStream << std::hex << hResult; //todo example this to text bugbug
-
-		logError2(stringStream.str(), file, line);
+		logError2(message + ":  " + ofToHex(hResult), file, line);
 
 	}
 	void Trace2552::logTrace2(const string& message,  char*file, int line) {
@@ -54,6 +45,7 @@ namespace From2552Software {
 		logVerbose2(message, file, line);
 		return false; // no error
 	}
+	// allow wide chars this way, bugbug do we need to make wstring seamless?
 	std::string Trace2552::wstrtostr(const std::wstring &wstr)	{
 		std::string strTo;
 		char *szTo = new char[wstr.length() + 1];
