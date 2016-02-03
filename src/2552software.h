@@ -15,6 +15,11 @@
 #include "ofMain.h"
 #include "ofFileUtils.h"
 #include "ole2.h"
+#include "ofxAssimpModelLoader.h"
+#include "ofMain.h"
+
+#include "ofVboMesh.h"
+#include "cAnimationController.h"
 
 namespace From2552Software {
 
@@ -60,9 +65,60 @@ namespace From2552Software {
 		}
 	}
 
+	// 3d model
+	class TheModel : public ofxAssimpModelLoader, public Trace2552 {
+	public: 
+		void setup(const string& name, ofPoint point) {
+			loadModel(name, true);
+			setPosition(point.x, point.y, point.z);
+			setLoopStateForAllAnimations(OF_LOOP_NORMAL);
+		}
+		void setPlay(const aiString& myname) {
+			for (unsigned int i = 0; i< getAnimationCount(); i++) {
+				ofxAssimpAnimation &a = getAnimation(i);
+				if (a.getAnimation()->mName == myname) {
+					a.play();
+				}
+			}
+		}
+		void draw() {
+			ofPushMatrix();
+			//ofTranslate(getPosition().x + 100, getPosition().y, 0);
+			//ofRotate(180, 1, 0, 0);
+			//ofTranslate(-getPosition().x, -getPosition().y, 0);
+			drawFaces();
+			ofPopMatrix();
+		}
+		void setMesh() {
+			
+			ofPushMatrix();
+			//ofTranslate(getPosition().x + 100, getPosition().y, 0);
+			//ofRotate(180, 1, 0, 0);
+			//ofTranslate(-getPosition().x, -getPosition().y, 0);
+
+			ofxAssimpMeshHelper & meshHelper = getMeshHelper(0);
+
+			ofMultMatrix(getModelMatrix());
+			ofMultMatrix(meshHelper.matrix);
+
+			ofMaterial & material = meshHelper.material;
+			if (meshHelper.hasTexture()) {
+				meshHelper.getTextureRef().bind();
+			}
+			material.begin();
+			mesh.drawVertices();
+			material.end();
+			if (meshHelper.hasTexture()) {
+				meshHelper.getTextureRef().unbind();
+			}
+			ofPopMatrix();
+		}
+	private:
+		ofMesh mesh;
+	};
 
 	// drawing related items start here
-	class BaseClass2552WithDrawing: public BaseClass2552 {
+	class BaseClass2552WithDrawing: public BaseClass2552, public Trace2552 {
 	public: 
 		BaseClass2552WithDrawing() { valid = false; }
 

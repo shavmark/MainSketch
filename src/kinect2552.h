@@ -84,6 +84,7 @@ namespace From2552Software {
 		IStream*                m_p32BitAudio;
 		bool                    m_SpeechActive;
 	};
+
 	//base class for things like faces
 	class Kinect2552BaseClass : public BaseClass2552WithDrawing {
 	public:

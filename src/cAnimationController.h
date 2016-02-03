@@ -1,4 +1,6 @@
 #pragma once
+// code from http://nolimitsdesigns.com/game-design/open-asset-import-library-animation-loader/
+
 #include "ofMain.h"
 #include "ofxAssimpModelLoader.h"
 

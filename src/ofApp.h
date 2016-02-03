@@ -2,16 +2,14 @@
 #include <sapi.h>  
 #include <sphelper.h> 
 #include <Synchapi.h>
-#include "ofMain.h"
-
+#include "2552software.h"
 #include "kinect2552.h"
-
-#include "ofxAssimpModelLoader.h"
-#include "ofVboMesh.h"
 
 class ofApp : public ofBaseApp{
 
 	public:
+		ofApp():ofBaseApp(){};
+
 		void setup();
 		void update();
 		void draw();
@@ -30,12 +28,14 @@ class ofApp : public ofBaseApp{
 		From2552Software::KinectAudio audio;
 		From2552Software::Kinect2552 myKinect;
 		
-		ofxAssimpModelLoader model;
+		From2552Software::TheModel model;
+		From2552Software::TheModel model2;
+
 		bool bAnimate;
 		bool bAnimateMouse;
 		float animationPosition;
 
-		ofMesh mesh;
 		ofLight	light;
 		ofEasyCam camera;
+		SceneAnimator sa;
 };
