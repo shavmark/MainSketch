@@ -2,6 +2,38 @@
 #include <istream>
 #pragma comment( lib, "sapi.lib" )
 
+//http://www.lighthouse3d.com/cg-topics/code-samples/importing-3d-models-with-assimp/
+// cc_standard is ok, but the foot is off person1_motion0.fbx
+// real engine likes the one animation per file
+// where texture stuff goes C:\Users\mark\AppData\Local\Temp\3dx6Temp
+
+
+/*
+sa.Init(model.getAssimpScene());
+ofShader shader;
+std::vector<glm::mat4> v = sa.GetTransforms(1);
+v = sa.GetTransforms(2);
+v = sa.GetTransforms(5);
+v = sa.GetTransforms(11);
+v = sa.GetTransforms(22);
+
+//const ofShader * getVideoShader(const ofBaseVideoDraws & video) const;
+aiAnimation *a2;
+aiNodeAnim* p;
+aiVectorKey mPositionKeys;
+int c = model.getAnimationCount();
+for (int i = 0; i < c; ++i) {
+ofxAssimpAnimation & a = model.getAnimation(i);
+a2 = a.getAnimation();
+for (int j = 0; j < a2->mNumChannels; ++j) {
+p = a2->mChannels[j];
+for (int k = 0; k < p->mNumPositionKeys; ++k) {
+mPositionKeys = p->mPositionKeys[k];
+}
+}
+}
+*/
+
 namespace From2552Software {
 	bool Trace2552::checkPointer2(IUnknown *p, const string&  message, char*file, int line) {
 		logVerbose2(message, file, line); // should give some good trace
@@ -54,6 +86,19 @@ namespace From2552Software {
 		strTo = szTo;
 		delete[] szTo;
 		return strTo;
+	}
+	void Graphics2552::rotateToNormal(ofVec3f normal) {
+		normal.normalize();
+
+		float rotationAmount;
+		ofVec3f rotationAngle;
+		ofQuaternion rotation;
+
+		ofVec3f axis(0, 0, 1);
+		rotation.makeRotate(axis, normal);
+		rotation.getRotate(rotationAmount, rotationAngle);
+		logVerbose("ofRotate " + ofToString(rotationAmount));
+		ofRotate(rotationAmount, rotationAngle.x, rotationAngle.y, rotationAngle.z);
 	}
 
 	void Sound::test() {
@@ -316,9 +361,6 @@ namespace From2552Software {
 
 		CComPtr<ISpGrammarBuilder>    cpGrammarBuilder;
 		SPSTATEHANDLE                 hStateTravel;
-		SPSTATEHANDLE                 hStateTravel_Second;
-		SPSTATEHANDLE                 hStateMethod;
-		SPSTATEHANDLE                 hStateDest;
 		// Create (if rule does not already exist)
 		// top-level Rule, defaulting to Active.
 		hr = cpGrammarBuilder->GetRule(L"Travel", 0, SPRAF_TopLevel | SPRAF_Active, TRUE, &hStateTravel);

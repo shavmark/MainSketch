@@ -11,79 +11,25 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	
-	ofSetFrameRate(30);
+	ofSetLogLevel(OF_LOG_VERBOSE);
 
-	ofBackground(50, 0);
-
+	pathLines.setMode(OF_PRIMITIVE_LINE_STRIP);
 	ofDisableArbTex(); // we need GL_TEXTURE_2D for our models coords.
+	ofEnableDepthTest();
+	light.enable();
+	cam.setPosition(0, 0, 100);
 
-	bAnimate = true;
-	bAnimateMouse = false;
-	animationPosition = 0;
-	//http://ogldev.atspace.co.uk/www/tutorial38/tutorial38.html
-	// from http://www.meshfactory.com/shop/catalog/free05.php
-	// 3ds max and unreal game engine work 
-	//http://mathinfo.univ-reims.fr/image/dxMesh/extra/d3dx_skinnedmesh.pdf
-	// works well model.loadModel("C:\\Users\\mark\\Documents\\iclone\\01.Chuck_Base2.fbx", true);
-	// obj draws perfect but no animation, fbx does animation but is easy to break drawing
-	/*
-	sa.Init(model.getAssimpScene());
-	ofShader shader;
-	std::vector<glm::mat4> v = sa.GetTransforms(1);
-	v = sa.GetTransforms(2);
-	v = sa.GetTransforms(5);
-	v = sa.GetTransforms(11);
-	v = sa.GetTransforms(22);
+	model.setup("C:\\Users\\mark\\Documents\\iclone\\heidi\\heidi.fbx");
+	model2.setup("C:\\Users\\mark\\Documents\\iclone\\reggie\\reggie_Catwalk.fbx");
 
-	//const ofShader * getVideoShader(const ofBaseVideoDraws & video) const;
-	aiAnimation *a2;
-	aiNodeAnim* p;
-	aiVectorKey mPositionKeys;
-	int c = model.getAnimationCount();
-	for (int i = 0; i < c; ++i) {
-	ofxAssimpAnimation & a = model.getAnimation(i);
-	a2 = a.getAnimation();
-	for (int j = 0; j < a2->mNumChannels; ++j) {
-	p = a2->mChannels[j];
-	for (int k = 0; k < p->mNumPositionKeys; ++k) {
-	mPositionKeys = p->mPositionKeys[k];
-	}
-	}
-	}
-	*/
-	// cc_standard is ok, but the foot is off person1_motion0.fbx
-	model.setup("C:\\Users\\mark\\Documents\\iclone\\heidi_motion0.fbx", ofPoint(ofGetWidth() * 0.5, (float)ofGetHeight() * 0.5, 0));
-	model2.setup("C:\\Users\\mark\\Documents\\iclone\\guy1_motion0.fbx", ofPoint(0, 0, 0));
-	// draw 1) default custom, all in one file - fail, 2) remove unlink mesh fail, went to 3ds max
-
-	// now trying multiple files, set all to 30/sec, unreal engine, works but does not draw hair thing, 
-
-	// now trying h2_catwalk.fbx and its drawing perfect, let me rexport and see (h3) custom default works well but shoes are too small
-
-	// now trying h3_catwalk.fbx and its drawing perfect, let me rexport and see (h3) unreal works well but shoes maybe a bit too smal
-
-	// now try the horse
-
-	
-
-	model.setPlay(aiString("AnimStack::motion0"));
-	model2.setPlay(aiString("AnimStack::motion0"));
-
-	//model.playAllAnimations();
-	//ofSetGlobalAmbientColor(ofColor(0, 255, 0));
-	ofSetSmoothLighting(true);
-	//ofSetLogLevel(OF_LOG_VERBOSE);
+	model.setPlay(aiString("AnimStack::Dance graceful"));
+	//model2.setPlay(aiString("AnimStack::Catwalk"));
 
 	//From2552Software::Sound sound;
 	//sound.test();
 
-	//enable to debug etc ofSetLogLevel(OF_LOG_VERBOSE);
-	//ofBackground(0);
-	ofFill();
-
-	myKinect.open();
-	audio.setup(&myKinect);
+	//myKinect.open();
+	//audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	//audio.setup(&myKinect);
 	
@@ -92,17 +38,42 @@ void ofApp::setup(){
 	//bodies.setup(&myKinect);
 
 	//ofSetWindowShape(640 * 2, 480 * 2);
+
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	previous = current;
+
+	// generate a noisy 3d position over time 
+	float t = (2 + ofGetElapsedTimef()) * .1;
+	current.x = ofSignedNoise(t, 0, 0);
+	current.y = ofSignedNoise(0, t, 0);
+	current.z = ofSignedNoise(0, 0, t);
+	current *= 400; // scale from -1,+1 range to -400,+400
+
+					// add the current position to the pathVertices deque
+	pathVertices.push_back(current);
+	// if we have too many vertices in the deque, get rid of the oldest ones
+	while (pathVertices.size() > 200) {
+		pathVertices.pop_front();
+	}
+
+	// clear the pathLines ofMesh from any old vertices
+	pathLines.clear();
+	// add all the vertices from pathVertices
+	for (unsigned int i = 0; i < pathVertices.size(); i++) {
+		pathLines.addVertex(pathVertices[i]);
+	}	// here's where the transformation happens, using the orbit and roll member functions of the ofNode class, 
+	// since angleH and distance are initialised to 0 and 500, we start up as how we want it
+
 	model.update();
 	model2.update();
 	//faces.baseline(); //use to debug, can do what ever needed to get things to work, to create a working base line
 	//faces.update();
 	//bodies.update();
 	//audio.update();
-	audio.update();
+	//audio.update();
 #if sample	
 	//--
 	//Getting joint positions (skeleton tracking)
@@ -147,61 +118,67 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+	ofColor cyan = ofColor::fromHex(0x00abec);
+	ofColor magenta = ofColor::fromHex(0xec008c);
+	ofColor yellow = ofColor::fromHex(0xffee00);
 
-	//ofShader shader =  getCurrentShader();
+	ofBackgroundGradient(magenta * .6, magenta * .4);
+	ofNoFill();
 
-	//ofSetColor(255);
+	easyCam.begin();
+	ofRotateX(15);
 
-	// ofEnableBlendMode(OF_BLENDMODE_ALPHA);
+	ofSetColor(0);
+	ofDrawGrid(500, 10, false, false, true, false);
 
+	// draw the path of the box
+	ofSetLineWidth(2);
+	ofSetColor(cyan);
+	pathLines.draw();
+
+	// draw a line connecting the box to the grid
+	ofSetColor(yellow);
+	ofDrawLine(current.x, current.y, current.z, current.x, 0, current.z);
+
+	// translate and rotate to the current position and orientation
+	ofTranslate(current.x, current.y, current.z);
+	if ((current - previous).length() > 0.0) {
+		From2552Software::Graphics2552::rotateToNormal(current - previous);
+	}
+	ofSetColor(255);
+	ofDrawBox(32);
+	ofDrawAxis(32);
+	ofFill();
+	model.draw();
+	model.drawMesh();
+	easyCam.end();
+	return;
+
+	material.begin();
+
+	ofNode node= camera.getTarget();
+
+	ofEnableBlendMode(OF_BLENDMODE_ALPHA);
 	ofEnableDepthTest();
+
 #ifndef TARGET_PROGRAMMABLE_GL    
 	glShadeModel(GL_SMOOTH); //some model / light stuff
 #endif
-	camera.begin();
-	light.enable();
-	/*
-	camera.begin();
-	//spotlight is drawn in the camera frame and oriented relative to the focus of the camera
-	camera.setDistance(3.0f);
-	camera.setNearClip(0.01f);
-	camera.setFarClip(500.0f);
-	camera.setPosition(0.4f, 0.2f, 0.8f);
-	camera.lookAt(ofVec3f(0.0f, 0.0f, 0.0f));
-	camera.end();
-	*/
+	
 	//ofEnableSeparateSpecularLight();
-
+	ofPushMatrix();
+	//ofRotateZ(180);
 	model.draw();
-
 	model2.draw();
-
-
 #ifndef TARGET_PROGRAMMABLE_GL    
-	//glEnable(GL_NORMALIZE);
+	glEnable(GL_NORMALIZE);
 #endif
-
-	model.setMesh();
-
-	model2.setMesh();
-
-	ofDisableDepthTest();
-	light.disable();
-	ofDisableLighting();
-	ofDisableSeparateSpecularLight();
-	ofSetColor(255, 255, 255);
-	ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate(), 2), 10, 15);
-	ofDrawBitmapString("keys 1-5 load models, spacebar to trigger animation", 10, 30);
-	ofDrawBitmapString("drag to control animation with mouseY", 10, 45);
-	ofDrawBitmapString("num animations for this model: " + ofToString(model.getAnimationCount()), 10, 60);
-
-	light.disable();
-	ofDisableLighting();
-	ofSetColor(light.getDiffuseColor());
-	light.draw();
-	camera.end();
+	model.drawMesh();
+	model2.drawMesh();
+	ofPopMatrix();
 
 
+	
 	/*
 	kinect.getDepthSource()->draw(0, 0, previewWidth, previewHeight);  // note that the depth texture is RAW so may appear dark
 
@@ -221,29 +198,27 @@ void ofApp::draw(){
 	//faces.drawProjected(kinect.getBodySource()->getBodies(), previewWidth, 0 + colorTop, previewWidth, colorHeight, ofxKFW2::ProjectionCoordinates::DepthCamera);
 	//faces.draw();
 	//bodies.draw();
+	ofDisableDepthTest();
+	camera.end();
+	material.begin();
+	light.disable();
+
+	ofDrawBitmapString("fps: " + ofToString(ofGetFrameRate(), 2), 10, 15);
+	ofDrawBitmapString("keys 1-5 load models, spacebar to trigger animation", 10, 30);
+	ofDrawBitmapString("drag to control animation with mouseY", 10, 45);
+	ofDrawBitmapString("num animations for this model: " + ofToString(model.getAnimationCount()), 10, 60);
 
 }
 
 void ofApp::mouseDragged(int x, int y, int button) {
-	// scrub through aninations manually.
-	animationPosition = y / (float)ofGetHeight();
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button) {
-	// pause all animations, so we can scrub through them manually.
-	model.setPausedForAllAnimations(true);
-	animationPosition = y / (float)ofGetHeight();
-	bAnimateMouse = true;
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button) {
-	// unpause animations when finished scrubbing.
-	if (bAnimate) {
-		model.setPausedForAllAnimations(false);
-	}
-	bAnimateMouse = false;
 }
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
@@ -269,4 +244,6 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){ 
 
+}
+void ofApp::keyPressed(int key) {
 }

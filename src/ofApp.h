@@ -22,6 +22,7 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
+		void keyPressed(int key);
 
 		From2552Software::KinectBodies bodies;
 		From2552Software::KinectFaces faces;
@@ -31,11 +32,17 @@ class ofApp : public ofBaseApp{
 		From2552Software::TheModel model;
 		From2552Software::TheModel model2;
 
-		bool bAnimate;
-		bool bAnimateMouse;
-		float animationPosition;
-
 		ofLight	light;
 		ofEasyCam camera;
+		ofMaterial material;
 		SceneAnimator sa;
+		ofPlanePrimitive plane;
+		ofCamera cam;
+		float angle;
+		ofVec3f previous, current;
+		ofEasyCam easyCam;
+
+		deque<ofVec3f> pathVertices;
+		ofMesh pathLines;
+
 };

@@ -18,7 +18,7 @@
 #include "ofxAssimpModelLoader.h"
 #include "ofMain.h"
 
-#include "ofVboMesh.h"
+
 #include "cAnimationController.h"
 
 namespace From2552Software {
@@ -29,7 +29,7 @@ namespace From2552Software {
 	private:
 	};
 
-	class Trace2552 {
+	class Trace2552 : public BaseClass2552 {
 	public:
 		static bool checkPointer2(IUnknown *p, const string&  message, char*file = __FILE__, int line = __LINE__);
 		static bool checkPointer2(BaseClass2552 *p, const string&  message, char*file = __FILE__, int line = __LINE__);
@@ -65,13 +65,35 @@ namespace From2552Software {
 		}
 	}
 
+	class Graphics2552 : public Trace2552 {
+	public:
+		static void rotateToNormal(ofVec3f normal);
+
+	};
 	// 3d model
 	class TheModel : public ofxAssimpModelLoader, public Trace2552 {
 	public: 
+		void setup(const string& name) {
+			loadModel(name, false);
+			setPosition(0, 0, 0); // assumes camera and this is the middle
+			createLightsFromAiModel();
+			setLoopStateForAllAnimations(OF_LOOP_NORMAL);
+		}
+		
 		void setup(const string& name, ofPoint point) {
 			loadModel(name, true);
 			setPosition(point.x, point.y, point.z);
 			setLoopStateForAllAnimations(OF_LOOP_NORMAL);
+		}
+		
+		void update() {
+			if (modelMeshes.size() > 0) {
+				mesh = getCurrentAnimatedMesh(0);
+			}
+			ofxAssimpModelLoader::update();
+		}
+		void moveRight() {
+			setPosition(ofGetWidth(), (float)ofGetHeight() * 0.5, 0);
 		}
 		void setPlay(const aiString& myname) {
 			for (unsigned int i = 0; i< getAnimationCount(); i++) {
@@ -82,16 +104,17 @@ namespace From2552Software {
 			}
 		}
 		void draw() {
-			ofPushMatrix();
+			//ofPushMatrix();
 			//ofTranslate(getPosition().x + 100, getPosition().y, 0);
 			//ofRotate(180, 1, 0, 0);
 			//ofTranslate(-getPosition().x, -getPosition().y, 0);
+			//ofRotate(90, 1, 0, 0);
 			drawFaces();
-			ofPopMatrix();
+			//ofPopMatrix();
 		}
-		void setMesh() {
+		void drawMesh() {
 			
-			ofPushMatrix();
+			//ofPushMatrix();
 			//ofTranslate(getPosition().x + 100, getPosition().y, 0);
 			//ofRotate(180, 1, 0, 0);
 			//ofTranslate(-getPosition().x, -getPosition().y, 0);
@@ -106,19 +129,20 @@ namespace From2552Software {
 				meshHelper.getTextureRef().bind();
 			}
 			material.begin();
-			mesh.drawVertices();
+			//ofRotate(90, 1, 0, 0);
+			mesh.drawFaces();
 			material.end();
 			if (meshHelper.hasTexture()) {
 				meshHelper.getTextureRef().unbind();
 			}
-			ofPopMatrix();
+			//ofPopMatrix();
 		}
 	private:
 		ofMesh mesh;
 	};
 
 	// drawing related items start here
-	class BaseClass2552WithDrawing: public BaseClass2552, public Trace2552 {
+	class BaseClass2552WithDrawing: public Trace2552 {
 	public: 
 		BaseClass2552WithDrawing() { valid = false; }
 
