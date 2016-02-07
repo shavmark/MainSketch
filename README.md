@@ -1,4 +1,7 @@
 # MainSketch
+
+note: I am migrating this to a new project
+
 This is an OpenFrameworks .9 and Kinect 2.0 SDK based project, both need to be installed and OpenFramworks needs to be in the Visual Studio 2015 solution.  The goal of this project is a thin layer around computer graphics, video and user input devices.  The thin-ness is unlike the game platforms for Windows like Unity which are big and its not always clear what is going on with them.
 
 https://github.com/elliotwoods and https://github.com/UnaNancyOwen provide Kinect 2 projects and make good references as an FYI.  Much better than the MS SDK samples I found.
